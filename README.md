@@ -1,5 +1,7 @@
 <img src="vignettes/images/logo.png" alt="drawing" width="300"/>
 
+This repository is a fork of the original [ccb-hms/phonto](https://github.com/ccb-hms/phonto), which is licensed under the CC BY 4.0 license. We continue to develop and enhance the project here.
+
 ## PHONTO - PHenome ONTOlogy for NHANES
 
 This package is designed to work with the Docker container available from <https://github.com/ccb-hms/NHANES> That container can be obtained by running the code below. Once installed and started users can log in via a web browser to analyze NHANES data using any tools they would like. The data live in a SQL database and can be accessed by a variety of tools. We provide an interface via RStudio and this package works together with the [nhanesA package](https://github.com/cjendres1/nhanes) to support a wide variety of analyses. phonto provides a few vignettes and users can familiarize themselves with the [Quick Start vignette](https://ccb-hms.github.io/phonto/vignettes/cobalt_paper.html) in order to find out how to interact with the DB. More docs can be found [Phonto page](https://ccb-hms.github.io/phonto/)
