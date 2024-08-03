@@ -182,9 +182,3 @@ print.qc_var <- function(x, ...)
 
 
 
-
-if (FALSE)
-{
-    
-}
-
