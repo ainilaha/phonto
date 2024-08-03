@@ -8,57 +8,29 @@
 ## (QuestionnaireDescriptions has BeginYear and EndYear for each
 ## table)
 
-## Metadata: fetch in advance and subset in R, because they are not
-## that big, or just get for specific variable? Unless we cache,
-## second option is probably better (do once inside qc_var).
+## Question: fetch Metadata tables in advance and subset in R, because
+## they are not that big, or just get for specific variable? Unless we
+## cache, second option is probably better (do once inside qc_var).
 
 
-
-.where_clause = function(variable = NULL, table = NULL) {
-    case = 1L + length(variable) + 2 * length(table)
-    where_clause = switch(case,
-           "",
-           sprintf("Variable == '%s'", variable),
-           sprintf("TableName == '%s'", table),
-           sprintf("Variable == '%s' & TableName == '%s'", variable, table))
-    return(where_clause)
+.create_query <- function(from, ._variable_name_ = NULL, ._table_name_ = NULL, verbose = FALSE) {
+    ## Use mangled argument names to avoid potential NSE (mis)matches
+    query <- dplyr::tbl(cn(), I(MetadataTable(from)))
+    if (!is.null(._variable_name_)) query <- dplyr::filter(query, Variable == ._variable_name_)
+    if (!is.null(._table_name_)) query <- dplyr::filter(query, TableName == ._table_name_)
+    if (verbose) show_query(query)
+    query
 }
 
-metadata_cb = function(variable = NULL, table = NULL) {
-    where_clause = .where_clause(variable, table)
-    
-    query = dplyr::tbl(cn(), I(MetadataTable("VariableCodebook"))) 
-    
-    if (where_clause != "") {
-        query = query |> filter(eval(parse(text = where_clause)))
-    }
-    
-    query |> dplyr::collect() |> as.data.frame()
+metadata_cb <- function(variable = NULL, table = NULL) {
+    .create_query("VariableCodebook", variable, table) |> dplyr::collect() |> as.data.frame()
 }
- 
-metadata_var = function(variable = NULL, table = NULL) {
-    where_clause = .where_clause(variable, table)
-    
-    query = dplyr::tbl(cn(), I(MetadataTable("QuestionnaireVariables")))
-    
-    if (where_clause != "") {
-        query  = query |> dplyr::filter(eval(parse(text = where_clause)))
-    }
-    query |> dplyr::collect() |> as.data.frame()
+metadata_var <- function(variable = NULL, table = NULL) {
+    .create_query("QuestionnaireVariables", variable, table) |> dplyr::collect() |> as.data.frame()
 }
-
-metadata_tab = function(table = NULL) {
-    where_clause = .where_clause(NULL, table)
-    
-    query = dplyr::tbl(cn(), I(MetadataTable("QuestionnaireDescriptions")))
-    
-    if (where_clause != "") {
-        query = query |> dplyr::filter(eval(parse(text = where_clause)))
-    }
-    
-    query |> dplyr::collect() |> as.data.frame()
+metadata_tab <- function(table = NULL) {
+    .create_query("QuestionnaireDescriptions", NULL, table) |> dplyr::collect() |> as.data.frame()
 }
-
 
 ## The specific types of discrepancies we look for are:
 
@@ -79,8 +51,6 @@ qc_var_multtable <- function(x, var, cb, tab)
     return(NULL)
 }
     
-
-
 ## - Inconsistency in Description / SasLabel (mostly benign)
 
 qc_var_description <- function(x, var, cb, tab, ignore.case = FALSE)
@@ -215,33 +185,6 @@ print.qc_var <- function(x, ...)
 
 if (FALSE)
 {
-    var <- metadata_var()
-    cb <- metadata_cb()
-    tab <- metadata_tab()
-
-    qc_var("PHAFSTMN", var, cb, tab)
-    qc_var("LBCBHC", var, cb, tab)
-    qc_var("ENQ100", var, cb, tab)
-    qc_var("LBXHCT", var, cb, tab)
-
-
-    system.time({
-        var <- metadata_var()
-        cb <- metadata_cb()
-        tab <- metadata_tab()
-        qc_var("LBCBHC", var, cb, tab)
-    })
-
-    system.time(qc_var("LBCBHC"))
-
-
-    qc_var("PHAFSTMN")
-    qc_var("ENQ100")
-
-
-    qc_var("LBCBHC")
-    qc_var("LBXHCT")
-
     
 }
 
