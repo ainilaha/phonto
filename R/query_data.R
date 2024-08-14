@@ -126,8 +126,7 @@ for (un in unioned_queries) {
 
 final_cols <- unique(unlist(tables_n_cols))
 final_query <- final_query |>
-  dplyr::select(SEQN, dplyr::all_of(final_cols), BeginYear, EndYear) |>
-  dplyr::mutate('Begin.Year' = BeginYear)
+  dplyr::select(SEQN, dplyr::all_of(final_cols), BeginYear, EndYear) 
 
 final_query |> dplyr::collect() |> as.data.frame() # return data frame
 
