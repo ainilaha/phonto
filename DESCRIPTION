@@ -1,7 +1,7 @@
 Package: phonto
 Type: Package
 Title: Using NHANES via Epiconductor
-Version: 0.1.4
+Version: 0.1.5
 Maintainer: Laha Ale <ainilaha@gmail.com>, Robert Gentleman <robert_gentleman@g.harvard.edu>,Deepayan Sarkar <deepayan.sarkar@gmail.com>
 Authors@R: 
     c(
@@ -14,7 +14,7 @@ Description: A package to facilitate using NHANES via Epiconductor.
 License: CC BY 4.0 | file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Depends: 
     R (>= 4.0)
 Imports:

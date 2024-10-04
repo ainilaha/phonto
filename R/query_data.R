@@ -126,7 +126,7 @@ for (un in unioned_queries) {
 
 final_cols <- unique(unlist(tables_n_cols))
 final_query <- final_query |>
-  dplyr::select(SEQN, dplyr::all_of(final_cols), BeginYear, EndYear) 
+  dplyr::select(SEQN, dplyr::all_of(final_cols), BeginYear, EndYear)
 
 final_query |> dplyr::collect() |> as.data.frame() # return data frame
 
@@ -288,7 +288,7 @@ nhanesColnames = function(tb_name){
 #' @examples nhanesDim("BMX_I")
 nhanesDim = function(nh_table,translated=TRUE){
   .checkTableNames(nh_table)
-  dplyr::tbl(cn(), I(RawTable(nh_table))) |> dim()
+  dplyr::tbl(cn(), I(RawTable(nh_table))) |> dplyr::collect() |> dim()
 }
 
 #' Return the First of an NHANES table
@@ -328,44 +328,5 @@ nhanesTail= function(nh_table,n=5,translated=TRUE){
 
 }
 
-#' dataDescription
-#'
-#' The dataDescription function retrieves comprehensive metadata for NHANES variables from the NHANES Codebook.
-#' The metadata includes English language descriptions (English Text), targeting information (Target), as well as SAS Labels,
-#' to provide a high level overview of each variable.
-#'
-#'
-#'
-#' @param tables_n_cols A named list where each element represents a specific NHANES questionnaire along with a set of variables. The element names signify the questionnaire titles, and their corresponding values consist of vectors that contain the desired variables from each respective questionnaire.
-#'
-#'
-#' @return This function returns a data frame containing metadata on the specified variables. Only unique variable names and variable descriptions are returned, i.e., if the list contains the same questionnaire/variables across different survey years, and if all metadata is consistent, then only one row for this variable will be return
-#' @export
-#'
-#' @examples dataDescription(list(BPQ_J=c("BPQ020", "BPQ050A"), DEMO_J=c("RIDAGEYR","RIAGENDR")))
-#' @examples cols = list(DEMO_I=c("RIDAGEYR","RIAGENDR","RIDRETH1","DMDEDUC2"),
-#'                      DEMO_J=c("RIDAGEYR","RIAGENDR","RIDRETH1","DMDEDUC2"),
-#'                      BPQ_I=c('BPQ050A','BPQ020'),BPQ_J=c('BPQ050A','BPQ020'),
-#'                      HDL_I=c("LBDHDD"),HDL_J=c("LBDHDD"), TRIGLY_I=c("LBXTR","LBDLDL"),
-#'                      TRIGLY_J=c("LBXTR","LBDLDL"))
-#' ans = jointQuery(cols)
-#' ans_description = dataDescription(cols)
-#'
-#'
-dataDescription = function(tables_n_cols){
-cols <- tables_n_cols[!duplicated(tables_n_cols)]
-ls_tmp = lapply(names(cols), function(l){
-  tmp_list = lapply(cols[[l]],function(cn){nhanesA::nhanesCodebook(nh_table = l, colname = cn)})
-  df <- do.call(rbind, lapply(tmp_list, function(inner_list) {
-    data.frame(
-      #Questionnaire = l,
-      VariableName = inner_list$`Variable Name:`,
-      SASLabel = inner_list$`SAS Label:`,
-      EnglishText = inner_list$`English Text:`,
-      Target = inner_list$`Target:`
-    )
-  }))
-})
-do.call(rbind, ls_tmp)
-}
+
 
