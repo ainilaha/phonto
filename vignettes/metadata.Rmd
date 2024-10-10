@@ -212,7 +212,7 @@ This practice introduces a complexity in the data and its analysis. One of chall
 
 Fortunately in the NHANES data the metadata available identifies which questions can trigger, or cause, skipping.  We have created some tools to help identify which questions were likely skipped. In the image below we see some of the complexities.  Depending on what brand of cigarette the person usually smokes they skip to different questions to find out about the actual products that are being consumed.
 
-![Question Skipping](images/SMQ661.png)
+![Question Skipping](images/SMQ661.png){width=80%}
 
 In the code chunk below we extract the smoking data, and then try to create the groupings
 used in the paper.  They have three groups, non-smokers, current smokers and ex-smokers. We use the `SMQ_I` table. We will define non-smoker as someone who as never smoked more than 100 cigarettes (`SMQ020`), anyone who has smoked more will be either
