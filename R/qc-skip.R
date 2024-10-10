@@ -10,7 +10,7 @@
 ##' @param table Name of a NHANES table
 ##' @return data frame
 ##' @author Deepayan Sarkar
-##' @example
+##' @examples
 ##' sk1 = get_skip_info("DEMO_J")
 ##' table(sk1$MaybeSkipped)
 ##' sk1[sk1$MaybeSkipped,]
