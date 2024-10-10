@@ -193,7 +193,42 @@ Here we are mainly focused on looking at the CodeBooks and trying to assess whet
  LBDLDLqc
 ```
 
-### 5. PHESANT-like process
+### Missing Values
+
+Missing values are prevelant in survey data collection.  There are many reasons for values to be missing and in general any analysis should consider how missing values should be handled. Some arise because the respondent doesn't know the answer, sometimes they don't want to respond to very personal questions, or questions about practices that carry social stigmas.  
+
+There are other cases where the missingness is structural. Questions about menopause will be not be surfaced to men, or questions about prostate cancer are not surfaced to women.
+
+Handling missing data is often important since many methods for analyzing the data don't allow for missing data.  In those cases the analyst is typically left with few choices.  They can exclude all cases with missing values or they can impute (or multiply impute) missing values.
+
+Handling missing data appropriately requires understanding why the data is missing and in some cases substituting a value, when its value can reasonably be identified.  For example, if first we ask "Do you smoke cigarettes?", and next ask "How many cigarettes do you smoke each day?"
+then in many survey deployments anyone answering *No* to the first question will not be asked the second one.  But if we believe the answer to the first question, then the answer to the second question would be zero.
+
+### Practicalities of Survey Deployment
+
+Readers familiar with the practice of giving surveys know that this is a complex process. The survey often has questions and components that are conditional on specific answers. For example, there are diseases such as prostate cancer or ovarian cancer that are only relevant to part of the population.  We might ask if someone has a condition and follow that with questions about symptoms or treatments.  The survey experience is better for the participants, and they stay engaged, when only appropriate and pertinent questions are surfaced.  And so most surveys and systems for giving surveys have mechanisms for *skipping* over questions and answers.
+
+This practice introduces a complexity in the data and its analysis. One of challenges is that a system to help identify individuals who were not asked the question so that they could be separated from any other respondent who was asked the question and did not provide an answer. Those two types of missingness are different and they will most likely need to be treated differently in the analysis.
+
+Fortunately in the NHANES data the metadata available identifies which questions can trigger, or cause, skipping.  We have created some tools to help identify which questions were likely skipped. In the image below we see some of the complexities.  Depending on what brand of cigarette the person usually smokes they skip to different questions to find out about the actual products that are being consumed.
+
+![Question Skipping](images/SMQ661.png)
+
+In the code chunk below we extract the smoking data, and then try to create the groupings
+used in the paper.  They have three groups, non-smokers, current smokers and ex-smokers. We use the `SMQ_I` table. We will define non-smoker as someone who as never smoked more than 100 cigarettes (`SMQ020`), anyone who has smoked more will be either
+a current smoker or an ex-smoker (`SMQ040`).  But anyone who has not smoked that many cigarettes will have a missing values for the variable `SMQ040`.
+
+In the code below we first get all the skipping information.  The function `get_skip_info` parses the metadata and extracts the information about skipping.  It summarizes the information in a dataframe with columns that identify the `Table`, the `Variable` and then if it might be skipped, and when it might be skipped which previous questions might have caused the skipping.
+
+Here we see that `SMQ040` can be skipped and that the answer to `SMQ020` is the only question that could cause that.  While for `SMDUPCA` three are many different places where skipping of this question could be triggered.
+
+```{r skip1}
+smqSkip = get_skip_info("SMQ_I")
+smqSkip[smqSkip$Variable=="SMQ040",]
+smqSkip[smqSkip$Variable=="SMDUPCA",]
+```
+
+### PHESANT-like process
 
 The NHANES project provides thousands of phenotypes and exposures. Navigating these can be very challenging and we are in the process of developing tools that will aid users in navigating the data quickly and reliably. Developing tools that can better help analysts navigate data at this scale is important.  We are patterning our efforts on those that were developed for the UK Biobank (Bycroft et al. 2018) and specifically the PHESANT (Millard et al. 2017) package.  
 
