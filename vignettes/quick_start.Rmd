@@ -46,7 +46,7 @@ Here are two examples:
 ![weight](images/weight.png){width=80%}
 
 
-There are many ways to access and utilize the NHANES data. Users familiar with SQL can connect and explore the data with database client tools such as HeidiSQL and DataGrip, or other programming languages such as R or Python either through tools that support database connections, or as we do in the [phonto package](https://github.com/ccb-hms/phonto/tree/main/vignettes), through custom built wrappers.
+There are many ways to access and use the NHANES data. Users familiar with SQL can connect and explore the data with database client tools such as HeidiSQL and DataGrip, or other programming languages such as R or Python either through tools that support database connections, or as we do in the [phonto package](https://github.com/ccb-hms/phonto/tree/main/vignettes), through custom built wrappers.
 
 Others may use [web-based tools](https://www.cdc.gov/nchs/nhanes/index.htm) provided by the CDC for investigating the data and metadata. In addition there are two existing R packages called [nhanesA](https://cran.r-project.org/web/packages/nhanesA/index.html) (Endres) and [RNHANES](https://cran.r-project.org/web/packages/RNHANES/index.html) (Susman). While most of the data collected can easily be downloaded from the CDC website, accessing the data in that way can be problematic and error prone and makes sharing and reproducibility more challenging due to the lack of versioning and the potential for changes in either the data or the infrastructure over time.  By capturing all components into containers we can aid reproducibility by versioning the containers and by keeping copies of each version for subsequent use.
 
@@ -126,11 +126,11 @@ datatable(res)
 
  One of the main challenges in using the NHANES data set is finding the tables that contain the data you want to analyze.  In this section we outline some of the basic methods you can use to do the searching. The returned value can be put into a searchable data table that you can use to further filter, sort and search for specific variables.
  
-The primary purpose of the `nhanesSearch` function is to facilitate the search for specific text strings within the variable description field. By utilizing this function, users can obtain a convenient data frame that includes the names of variables whose descriptions meet the specified criteria. Furthermore, the function offers additional filtering options, such as specifying a start and stop year, enabling users to further refine their search results.
+The primary purpose of the `nhanesSearch` function is to facilitate the search for specific text strings within the variable description field. By using this function, users can obtain a convenient data frame that includes the names of variables whose descriptions meet the specified criteria. Furthermore, the function offers additional filtering options, such as specifying a start and stop year, enabling users to further refine their search results.
 
 
 ```{r}
-# nhanesSearch use examples
+# nhanesSearch examples
 #
 # Search on the word bladder, restrict to the 2001-2008 surveys, 
 # print out 50 characters of the variable description
@@ -146,7 +146,7 @@ urin[1:10]
 
 The `nhanesSearch` function also provides an option to exclude specific matches. In the previous search, any variable name containing the word "during" would have been considered a match. However, by excluding these terms in the output, the function ensures results that more accurately reflect your desired specifications.
 ```{r}
-urinEx = nhanesSearch("urin", exclude_terms="during", ignore.case=TRUE, ystop=2010, namesonly=TRUE)
+urinEx = nhanesA::nhanesSearch("urin", exclude_terms="during", ignore.case=TRUE, ystop=2010, namesonly=TRUE)
 length(urinEx)
 urinEx[1:10]
 ```
@@ -202,11 +202,11 @@ The 5th element, the `Codebook`, is a data frame providing information about the
 
 ### 4. Data manipulations
 
-#### 4.1 unionQuery()
+#### 4.1 unionQuery
 
-The `unionQuery()` function is designed to aggregate data across the years for a fixed Questionnaire. Thus we are assuming all the inputs have essentially the same columns and that all variables are measuring the same concept across years. This function then aggregates by appending rows and returns the results as a data frame. If there are columns that are unique to one (or a few) questionnaires then these will be filled in as NA in any questionnaires that don't have that column.  Currently this function does not check the code books for consistency of inputs across years; analysts will need to do that for themselves. 
+The `unionQuery` function is designed to aggregate data across the years for a fixed Questionnaire. Thus we are assuming all the inputs have essentially the same columns and that all variables are measuring the same concept across years. This function then aggregates by appending rows and returns the results as a data frame. If there are columns that are unique to one (or a few) questionnaires then these will be filled in as NA in any questionnaires that don't have that column.  Currently this function does not check the code books for consistency of inputs across years; analysts will need to do that for themselves. 
 
-For an example of how to utilize this function, we use the blood pressure tables BPX, BPX_B,...BPX_J from years 1999-2000 to 2017-2018. User can aggregate some or all of the data contained in relevant tables.  Note: we are showing this example for illustrative purposes and have not carefully checking the code book. We encourage you to take the time to always ensure that code book entries are compatible.
+For an example of how to use this function, we use the blood pressure tables BPX, BPX_B,...BPX_J from years 1999-2000 to 2017-2018. User can aggregate some or all of the data contained in relevant tables.  Note: we are showing this example for illustrative purposes and have not carefully checking the code book. We encourage you to take the time to always ensure that code book entries are compatible.
 
 ```{r search_union,warning=FALSE,message=FALSE}
 nhanesSearchTableNames('BPX[_]')
@@ -216,8 +216,8 @@ blood_df <- unionQuery(list(BPX_C=c("BPXDI1","BPXDI2","BPXSY1","BPXSY2"),
 DT::datatable(blood_df[1:400,])
 ```
 
-#### 4.2 jointQuery()
-The `jointQuery()` function, table list of table name and a set of column names, it merges the researched results and returns the results as a data frame. The data are joined using SEQN which is the unique identifier for individuals.
+#### 4.2 jointQuery
+The `jointQuery` function, table list of table name and a set of column names, it merges the researched results and returns the results as a data frame. The data are joined using SEQN which is the unique identifier for individuals.
 
 The example below is much more complex than our previous examples, but it is also a more realistic query example. We are collecting data across 4 tables, DEMO, BPQ, HDL and TRIGLY. And also across data collection cycles I and J.  We first construct our query string, note that it is important that every table appears twice, once with an **_I** and once with an **_J**. In addition the variables being selected must be the same for each cycle and each table.
 
@@ -229,58 +229,13 @@ cols = list(DEMO_I=c("RIDAGEYR","RIAGENDR","RIDRETH1","DMDEDUC2"),
             TRIGLY_J=c("LBXTR","LBDLDL"))
 data <- jointQuery(cols)
 tdata = data[1:100,]
-datatable(tdata)
+DT::datatable(tdata)
 ```
 
 
 
-### 5. PHESANT-like process
-
-The NHANES project provides thousands of phenotypes and exposures. Navigating these can be very challenging and we are in the process of developing tools that will aid users in navigating the data quickly and reliably. Developing tools that can better help analysts navigate data at this scale is important.  We are patterning our efforts on those that were developed for the UK Biobank (Bycroft et al. 2018) and specifically the PHESANT (Millard et al. 2017) package.  
-
-We can run a PHESANT-like process to convert each column into data types. It also provides the ratio of unique values (`r_unique`), the proportion of zeros (`r_zeros`), and the ratio of NAs (`r_NAs`), which is calculated by the number of unique values, zeros, and NAs divided by total records. The categorical data types (ordered or unordered) are represented by integers, and we categorize them as multilevel. For example, education (DMDEDUC2) is labeled as Multilevel(7) which means it has 7 levels. Information on whether or not the levels are ordered would have to be obtain from the on-line NHANES documentation.
 
 
-```{r}
-phs_dat = phesant(data)
-data = phs_dat$data
-DT::datatable(phs_dat$phs_res)
-```
-
-We can also find out which variables are categorical.
-```{r CategoricalVars, echo=TRUE}
-categoricalVars = rownames(phs_dat$phs_res)[grep("^Multilevel", phs_dat$phs_res$types)]
-categoricalVars
-```
 
 
-### 6.Setup factor levels for categorical variables
-
-In the raw NHANES data stored in the database all categorical variables are represented as integers.  In order to make use of these for analysis you will need to transform them into factors in R.  
-
-Categorical variables are presented with integers as shown below.
-
-```{r}
-data[,c('RIAGENDR', 'RIDRETH1','DMDEDUC2')] |> head() |> knitr::kable()
-```
-And the real factor levels for year 2003-2004 can be found in [the codebook]() as shown below.
-![gender](images/gender.png){width=85%}
-![enthinicity](images/ethinicity.png){width=85%}
-![education](images/edu.png){width=85%}
-
-
-The data from NHANES comes as tables with integer codes for each of the levels of a factor variable.  A separate file, one for each cycle and questionnaire, has the map from the codes to the text description of what the levels mean. Because the chances of errors if users have untranslated variables (e.g. treating them as integers for example) we automatically translate all of these tables.  There is a way to access the raw data that is explained in a different vignette.
-
-The code below is how you would do the translation using the `nhanesA` package.  But in the NHANES docker container this is not needed.
-
-
-```{r,DT.warn.size=FALSE, eval=FALSE}
-##now we can translate the variables that need to be translated
-t1 = nhanesTranslate("DEMO_J",c("RIDAGEYR","RIAGENDR","RIDRETH1","DMDEDUC2","years"),data=data)
-datatable(t1[1:100,c('SEQN','RIDAGEYR','RIAGENDR', 'RIDRETH1')] )
-```
-
-
-Currently, we are doing as the following flow chat, but both the ordered and unordered are considered as multilevel.
-![PHESANT flow chat](images/phesant_like.png){width=80%}
 

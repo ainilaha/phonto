@@ -22,12 +22,37 @@
     query
 }
 
+##' Access Metadata Tables in NHANES Postgres DB
+##'
+##' \code{metadata_cb} retrieves data from the VariableCodebook table,
+##' \code{metadata_var} retrieves data from the QuestionnaireVariables table
+##' and \code{metadata_tab} retrieves data from the QuestionnaireDescriptions table.
+##' Where appropriate the returned value can be a subset for a single variable, or 
+##' NHANES table. The contents of these tables is described in the MetaData vignette for the
+##' package.
+##'
+##' @rdname MetadataTables
+##' @aliases metadata_cb metadata_tab metadata_var
+##' @title Metadata Tables : Access Postgres DB
+##' @param variable Character string naming a variable in one or more NHANES tables 
+##' @param table Character string naming one NHANES table
+##' @return A dataframe or tibble with the appropriate subset of the metadata table.
+##' @examples
+##' ex1 = metadata_cb(variable = "LBDLDL")
+##' ex2 = metadata_var(table = "DEMO_D")
+##' ex3 = metadata_tab(table = "ACQ_J")
+##' @export
+##' @author Deepayan Sarkar
 metadata_cb <- function(variable = NULL, table = NULL) {
     .create_query("VariableCodebook", variable, table) |> dplyr::collect() |> as.data.frame()
 }
+##' @rdname MetadataTables
+##' @export
 metadata_var <- function(variable = NULL, table = NULL) {
     .create_query("QuestionnaireVariables", variable, table) |> dplyr::collect() |> as.data.frame()
 }
+##' @rdname MetadataTables
+##' @export
 metadata_tab <- function(table = NULL) {
     .create_query("QuestionnaireDescriptions", NULL, table) |> dplyr::collect() |> as.data.frame()
 }

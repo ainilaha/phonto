@@ -17,6 +17,11 @@ data frame
 Find variables that may have been skipped based on response to a
 previous question.
 }
+\examples{
+sk1 = get_skip_info("DEMO_J")
+table(sk1$MaybeSkipped)
+sk1[sk1$MaybeSkipped,]
+}
 \author{
 Deepayan Sarkar
 }

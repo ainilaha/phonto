@@ -10,20 +10,21 @@
 ##' @param table Name of a NHANES table
 ##' @return data frame
 ##' @author Deepayan Sarkar
+##' @examples
+##' sk1 = get_skip_info("DEMO_J")
+##' table(sk1$MaybeSkipped)
+##' sk1[sk1$MaybeSkipped,]
 ##' @export
 get_skip_info <- function(table)
 {
     ## Look at codebook for a table and decide which variables may get
     ## skipped over
 
-    var <- phonto:::metadata_var(table = "AA_H")
-    cb <- phonto:::metadata_cb(table = "AA_H")
+    var <- metadata_var(table = table)
+    cb <- metadata_cb(table = table)[, c("Variable", "SkipToItem")]
 
-    cb <-
-        nhanesQuery(sprintf("select Variable, SkipToItem from Metadata.VariableCodebook where TableName = '%s'",
-                            table))
-
-    skipvars <- subset(cb, !is.na(SkipToItem))
+    ##SkipToItem is character - and not NA
+    skipvars <- subset(cb, nchar(SkipToItem)>0)
 
     ## Sanity check: non-NA values of SkipToItem should be either
     ## another variable, or "End of Section"
