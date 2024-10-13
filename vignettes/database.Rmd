@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Accessing the Database Directly"
+title: "Phonto Database Interactions"
 output: rmarkdown::html_vignette
 author: Laha Ale, Robert Gentleman, Deepayan Sarkar
 vignette: >
@@ -66,6 +66,27 @@ con = DBI::dbConnect(RPostgres::Postgres(),
 
 dbGetQuery(con,
       "SELECT * FROM information_schema.schemata where schema_owner = 'sa'")
+```
+
+In the next code chunk we show how to use the `Id` constructor to identify the table you want within the Database heirarchy.
+Note that we first selected from the `Raw` schema so the values in the `RIAGENDR` variable are integers which have not been translated to the sex of the individual. Then when we select from the Translated schema the integer values have been replaced by `Female` and `Male`.
+
+```{r DB2}
+
+ddi = dbGetQuery(con,
+           "SELECT table_name FROM information_schema.tables
+                   WHERE table_schema='Raw'")
+
+nameR = Id(catalog = "NhanesLandingZone", schema = "Raw", table = "DEMO_J")
+nameT = Id(catalog = "NhanesLandingZone", schema = "Translated", table = "DEMO_J")
+dbListFields(con, nameR)
+
+demoj = dbReadTable(con, nameR)
+dim(demoj)
+demoj$RIAGENDR[1:10]
+
+d2 = dbReadTable(con, nameT)
+d2$RIAGENDR[1:10]
 
 ```
 
