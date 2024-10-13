@@ -1,7 +1,7 @@
 Package: phonto
 Type: Package
 Title: Using NHANES via Epiconductor
-Version: 0.1.7
+Version: 0.1.8
 Maintainer: Laha Ale <ainilaha@gmail.com>, Robert Gentleman <robert_gentleman@g.harvard.edu>,Deepayan Sarkar <deepayan.sarkar@gmail.com>
 Authors@R: 
     c(
@@ -40,5 +40,6 @@ Suggests:
     kableExtra,
     plotROC,
     survey
+    RPostgres
 VignetteBuilder: knitr
 Config/testthat/edition: 3

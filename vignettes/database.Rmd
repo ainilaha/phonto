@@ -1,0 +1,79 @@
+---
+layout: default
+title: "Accessing the Database Directly"
+output: rmarkdown::html_vignette
+author: Laha Ale, Robert Gentleman, Deepayan Sarkar
+vignette: >
+  %\VignetteIndexEntry{Phonto Database Interactions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library("RPostgres")
+library("DBI")
+```
+
+
+### Introduction
+
+
+
+ In this vignette we describe some of the tools in `phonto` that can be used to access the Postgres database that is running in the Docker container.
+ We assume that the reader is using either a Docker container with a copy of the NHANES database.
+  Details on the NHANES data etc are described in the `Quick Start` vignette and readers should be familiar with that document.
+ 
+## NHANES Database
+
+Complete details of the process are described in the github repository https://github.com/deepayan/nhanes-postgres. Here we will just quickly summarize that information and focus on describing how a user can interact with the database.
+A good grasp of databases, SQL and scientific computing are important prerequisites for being able to effectively interact with the database.
+
+Within the Docker container a fully functional Postgres database is running. That means that you can add new tables, views have user management and access restrictions as needed. These are typically managed through the standard Postgres admin profile.  Users can use any of their favorite tools or GUIs for this such as Azure Data Studio.
+
+There are three schemas in the database, Metadata, Translated and Raw.  Metadata provides concise descriptions of all tables and variables within the NHANES data base.  The Translated and Raw schemas contain one table for each of the NHANES data sets, which were extracted from a single .XPT file.  The Raw schema should have tables whose contents are identical to the contents of the XPT file while the Translated schema has tables where some translation of numeric values into the corresponding factor levels has been carried out.  Other minor modifications of the data may also have been applied to these tables.  Full documentation of that process will be in the https://github.com/deepayan/nhanes-postgres repository.
+
+Briefly, we use the `nhanesA` package to help bootstrap our extract/transform/load (ETL) process.
+This allows us to ensure some degree of compatibility between our approach and that package, which is already widely used and relies on downloading data from the CDC website.
+
+### R functions 
+
+We use the `nhanesA` package to bootstrap the ETL process. 
+In `phonto` the `addPrimaryKey` function allows the user specifies the table and the columns that will be treated as primary keys.
+
+With the `dbInsertNhanesTable` the user can insert a specified table into the database 
+`insertTableDB` - not sure what the difference between these functions is
+
+Are there any others we want to create?
+
+
+### Connecting with the Server
+
+In the code below we show how to connect directly to the database and to use `dbGetQuery`
+to interact directly with the database. Users that want that sort of flexibility can simply use `DBI` and `RPostgres` to carry out a range of interactions.
+
+```{r direct2DB}
+con = DBI::dbConnect(RPostgres::Postgres(),
+               dbname = "NhanesLandingZone",
+               host = "localhost",
+               port = 5432L,
+               password = "NHAN35",
+               user = "sa")
+
+dbGetQuery(con,
+      "SELECT * FROM information_schema.schemata where schema_owner = 'sa'")
+
+```
+
+
+
+
+
+
+
+
+
