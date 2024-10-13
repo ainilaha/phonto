@@ -39,7 +39,7 @@ Suggests:
     sjPlot,
     kableExtra,
     plotROC,
-    survey
+    survey,
     RPostgres
 VignetteBuilder: knitr
 Config/testthat/edition: 3
