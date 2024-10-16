@@ -193,6 +193,14 @@ Here we are mainly focused on looking at the CodeBooks and trying to assess whet
  LBDLDLqc
 ```
 
+For the `unionQuery` function we typically should do some checking of phenotype consistency before we call it.
+
+```{r unionQueryCheck}
+cols = list(DEMO_F=c("RIDAGEYR","RIAGENDR","RIDRETH1","DMDEDUC3"),
+                     DEMO_G=c("RIDAGEYR","RIAGENDR","RIDRETH1","DMDEDUC3"))
+dd = unionQuery(cols)
+                   
+```
 ### Missing Values
 
 Missing values are prevelant in survey data collection.  There are many reasons for values to be missing and in general any analysis should consider how missing values should be handled. Some arise because the respondent doesn't know the answer, sometimes they don't want to respond to very personal questions, or questions about practices that carry social stigmas.  

@@ -16,8 +16,8 @@
 .create_query <- function(from, ._variable_name_ = NULL, ._table_name_ = NULL, verbose = FALSE) {
     ## Use mangled argument names to avoid potential NSE (mis)matches
     query <- dplyr::tbl(cn(), I(MetadataTable(from)))
-    if (!is.null(._variable_name_)) query <- dplyr::filter(query, Variable == ._variable_name_)
-    if (!is.null(._table_name_)) query <- dplyr::filter(query, TableName == ._table_name_)
+    if (!is.null(._variable_name_)) query <- dplyr::filter(query, Variable %in% ._variable_name_)
+    if (!is.null(._table_name_)) query <- dplyr::filter(query, TableName %in% ._table_name_)
     if (verbose) show_query(query)
     query
 }
