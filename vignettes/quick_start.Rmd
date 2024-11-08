@@ -187,7 +187,7 @@ LDLTabs = nhanesSearchVarName('LBDLDL')
 LDLTabs
 ```
 
-### 3 nhanesCodebook
+### 3. nhanesCodebook
 
 Information about each variable is stored in the NHANES code book. To access the NHANES code book one can use the `nhanesCodebook` function. The function returns a list of length 5 that provides pertinent information about the variable. The first four elements provide basic descriptor information, i.e. `Variable` is the variable name, `Description` is the actual text of the question (or a description of the lab value), `Target` tells you which participants were eligible to be asked and `SasLabel` is the variable label.
 The 5th element, the `Codebook`, is a data frame providing information about the structure of the variable, such as which values the variable can take on. When you want to combine variables across study years you will need to be careful to ensure that the `Codebooks` are compatible.  NHANES has changed variables, added or removed possible answers, and done many other things as the questionnaires have evolved.  It is **not safe** to assume that an identical variable name will have an identical interpretation.
@@ -232,10 +232,17 @@ tdata = data[1:100,]
 DT::datatable(tdata)
 ```
 
+### 5. The COVID pandemic and its effects
 
+Field operations for the 2019-2020 data collection cycle were halted in March of 2020. This resulted in incomplete data for that cycle, and due to the manner it was collected it was determined that a nationally representative cohort could not be constructed.  Readers wanting to use data over this period should refer to the CDC website https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/OverviewBrief.aspx?Cycle=2017-2020
 
+In order to make some use of the data that were collected the CDC provides some amount of the data collected in a set of data tables that have a prefix of `P_`, e.g. P_DEMO. These data are a combination of released data from the 2017-2018 cycle together with the unreleased data from the 2019-2020 cycle.  Users are cautioned not to use tables with `P_` together with those that have a `_J` suffix, as they would be double counting a substantial number of people.  It is not possible (also we believe that the CDC data use agreement prohibits trying) to separate these.
+In our code, where possible we try to warn, or create an error, if users attempt to create data sets that contain both.
 
+```{r pandemic1}
 
-
-
-
+pd = nhanes( "P_DEMO")
+dim(pd)
+demoj = nhanes("DEMO_J")
+dim(demoj)
+```

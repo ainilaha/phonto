@@ -153,7 +153,7 @@ names(tables_n_cols) = .convertTranslatedTable(names(tables_n_cols),translated)
 cols_to_tables = .convertColunms(tables_n_cols,translated)
 
  if(length(cols_to_tables)>1){
-   stop("Please make sure the tables and chave the same columns")
+   stop("Please make sure the tables have the same columns")
  }
 
 metadata_questionnaire_descriptions <- dplyr::tbl(cn(), I(MetadataTable("QuestionnaireDescriptions")))
