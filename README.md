@@ -13,44 +13,38 @@ This package is designed to work with the Docker container available from <https
 Start Docker on Mac or Linux
 
 ``` dockerfile
-docker \
-    run \
-        --rm \
-        --platform=linux/amd64 \
-        --name nhanes-workbench \
-        -v <YOUR LOCAL PATH>:/mnt/ \
+docker run --rm \
+       --name nhanes-pg \
         -d \
+	    -v <LOCAL_DIRECTORY>:/HostData \
         -p 8787:8787 \
         -p 2200:22 \
-        -p 1433:1433 \
-        -e 'CONTAINER_USER_USERNAME=USER' \
-        -e 'CONTAINER_USER_PASSWORD=PASSWORD' \
-        -e 'ACCEPT_EULA=Y' \
-        -e 'SA_PASSWORD=yourStrong(!)Password' \
-         hmsccb/nhanes-workbench:version-0.2.0
+        -p 5432:5432 \
+        -e 'CONTAINER_USER_USERNAME=test' \
+        -e 'CONTAINER_USER_PASSWORD=test' \
+         deepayansarkar/nhanes-postgresql:0.10.1
 ```
 
 Start Docker on Windows
 
 ``` dockerfile
-docker ^
-    run ^
-        --rm ^
-        --platform=linux/amd64 ^
-        --name nhanes-workbench ^
-  -v <YOUR LOCAL PATH>:/mnt/ ^
-  -p 8787:8787 -p 2200:22 -p 1433:1433 ^
-  -e "CONTAINER_USER_USERNAME=USER" ^
-  -e "CONTAINER_USER_PASSWORD=PASSWORD" ^
-  -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=yourStrong(!)Password" ^
-  hmsccb/nhanes-workbench:version-0.2.0
+docker run --rm ^
+       --name nhanes-pg ^
+        -d ^
+	    -v <LOCAL_DIRECTORY>:/HostData ^
+        -p 8787:8787 ^
+        -p 2200:22 ^
+        -p 5432:5432 ^
+        -e 'CONTAINER_USER_USERNAME=test' ^
+        -e 'CONTAINER_USER_PASSWORD=test' ^
+         deepayansarkar/nhanes-postgresql:0.10.1
 ```
 
 **2. Log into Rstudio**
 
 Log into RStudio via: <http://localhost:8787> and using the username set in the command above. In the above command, the username and password are set as `USER` and `PASSWORD`, respectively, but you can modify them if you prefer.
 
-More details about the [NHANES Docker](https://github.com/ccb-hms/NHANES).
+More details about the [NHANES Docker](https://github.com/deepayan/nhanes-postgres).
 
 <br/>
 
@@ -61,7 +55,7 @@ You can install the development version of `phonto` from [GitHub](https://github
 ``` r
 # install.packages("devtools")
 
-devtools::install_github("ccb-hms/phonto")
+devtools::install_github("ainilaha/phonto")
 ```
 
 ### Examples
