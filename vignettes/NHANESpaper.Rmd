@@ -18,24 +18,17 @@ vignette: >
 
 # Introduction
 
-The advent of accessible large complex survey data such as that available from the National Health and Nutrition Examination Survey (NHANES), the UK Biobank, or SEER (<https://seer.cancer.gov/>) has had a transformational effect on many aspects of epidemiology and real world data analysis.  NHANES is a widely used resource referenced by thousands of papers every year and over 700 GitHub repositories mention NHANES (based on <https://github.com/topics>). Complex datasets such as NHANES often consist of multiple data files with disjoint metadata and documentation resources. Interacting with these and performing analyses typically involves substantial amounts of preprocessing.  This can be time consuming and is, in general, error-prone.  Use cases often span multiple outcomes (responses) based on complex modeling of tens to thousands of features.  In some cases, data are collected over time, or using different methods (e.g. surveys and imaging) so some amount of integration and alignment is needed. Including exposure data based on geography or season will increase the complexity.  As a result, the analyses are not easily replicated or extended.
+The advent of accessible large complex survey data such as that available from the National Health and Nutrition Examination Survey (NHANES), the UK Biobank, or SEER (<https://seer.cancer.gov/>) has had a transformational effect on many aspects of epidemiology and real world data analysis. NHANES is a widely used resource referenced by thousands of papers every year and over 700 GitHub repositories mention NHANES (based on <https://github.com/topics>). Complex datasets such as NHANES often consist of multiple data files with disjoint metadata and documentation resources. Interacting with these and performing analyses typically involves substantial amounts of preprocessing. This can be time consuming and is, in general, error-prone. Use cases often span multiple outcomes (responses) based on complex modeling of tens to thousands of features. In some cases, data are collected over time, or using different methods (e.g. surveys and imaging) so some amount of integration and alignment is needed. Including exposure data based on geography or season will increase the complexity. As a result, the analyses are not easily replicated or extended.
 
+In order to interact with and support the existing community of NHANES users we have worked with the `nhanesA` authors to ensure that any user can seamlessly transition their work from being based on the CDC data sources or the database in Docker approach we have taken.  This should also enable rapid porting of code from one data source to the other, should that be required.
 
-\<design decision to support nhanesA as an out of DB alternative\>
+The database design is largely the same as that done at Harvard Medical school with the Center (now Core) for Computational Biomedicine, (https://github.com/ccb-hms/nhanes-database) and we have benefitted greatly from our interactions with them. Some of the key design decisions include having a complete set of translated tables, where categorical variables have their numerical labels changed to text labels, to reduce the possibility that they would be misinterpreted as numeric data.
 
-\<maybe talk about why we did the DB a little more and how we ended up on the design\>
-
-In this paper, we describe our work to develop a system using Docker, Postgres and RStudio to enhance the discovery process and facilitate reproducibility and cross-dataset integration.  This work is related to and has benefited from previous work done at the Center For Computational Biomedicine (https://github.com/ccb-hms/nhanes-database).
-
-
-In particular we propose a system that is based on 1) Docker, which allows for the detailed specification of the computational tools and resources, and 2) a relational database such as Postgres that supports querying and joining.  Versions of statistical software such as R and RStudio can be loaded into the Docker container and used to provide an interface between the database and the analytic process.  The use of Rmarkdown or similar tools for creating documents can provide a detailed record of all steps taken in the analysis.  These interactive documents can be shared and re-used by others to confirm or extend an analysis in new directions.
-
+In particular we propose a system that is based on 1) Docker, which allows for the detailed specification of the computational tools and resources, and 2) a relational database such as Postgres that supports querying and joining. Versions of statistical software such as R and RStudio can be loaded into the Docker container and used to provide an interface between the database and the analytic process. The use of Rmarkdown or similar tools for creating documents can provide a detailed record of all steps taken in the analysis. These interactive documents can be shared and re-used by others to confirm or extend an analysis in new directions.
 
 # Methods
 
-
-We will describe the tools and methods that we used with explicit references to the NHANES data.  This will provide some clarity to the steps and readers who would want to implement a similar strategy for a different data source will be able to adjust the process as necessary.
-
+We will describe the tools and methods that we used with explicit references to the NHANES data. This will provide some clarity to the steps and readers who would want to implement a similar strategy for a different data source will be able to adjust the process as necessary.
 
 ## Creating the Database
 
@@ -55,15 +48,15 @@ The specific details describing how we constructed the container are given in th
 
 We create and update a set of environment variables, Table 1,  that can be tested for so that software can determine whether it is running in this container and hence can use the corresponding tools and database. Version numbers on the container and information on the date the data were downloaded help provide the resources needed to assess reproducibility and accuracy of results.  We also identify the database in to allow for different choices.   Another goal of this effort is to allow software packages such as nhanesA to be engineered so they function in the same way whether they are used in the container or not.  This strategy enables the creation of documents and tools that can function whether or not the container is being used.
 
-\| Variable                                                            \|   Value                                \|
+\| Variable  \| Value \|
 
-\| :—-                                                                   \| :—-                                     \|
+\| :—-  \| :—-  \|
 
-\| EPICONDUCTOR_CONTAINER_VERSION   \|  Version Number                \|
+\| EPICONDUCTOR_CONTAINER_VERSION  \| Version Number \|
 
-\|  EPICONDUCTOR_COLLECTION_DATE       \|  Date data were accessed \|
+\| EPICONDUCTOR_COLLECTION_DATE \| Date data were accessed \|
 
-\|  EPICONDUCTOR_CONTAINER_DB             \| Type of database used       \|
+\| EPICONDUCTOR_CONTAINER_DB  \| Type of database used \|
 
 ## Accessing the Data
 
@@ -103,13 +96,26 @@ c) Reproducible Outputs: The system facilitates the creation of reproducible out
 
 The NHANES data were collected using a complex, four-stage sample design, and appropriate analyses of the data typically involve using specialized survey analysis procedures that use weights to account for the sampling scheme. Briefly, each sampled person is assigned a weight reflecting the number of people in the broader population that the individual represents. We recommend using the survey package to perform these analyses. We provide examples of using the weights with the nhanesA and phonto packages and the CDC provides detailed documentation as well.  
 
+## The metadata tables
 
+A primary advantage of having all data in a relational database is that one can make comparisons both across tables within a cycle or across cycles.  These allow the analyst to identify potential problems and inconsistencies in the data.  Ultimately, we believe that many of these can be adjusted for automatically.
 Finding Inconsistencies
 
 Describe qc_var, the metadata_tab/var/db
 JointQuery and unionQuery 
 
-Supplementary Material
+
+# Discussion
+
+We believe that by creating a resource of this nature we can help enhance reproducibility and foster the adoption of more sophisticated and appropriate statistical methods. When users are willing to share their code then others will be easily able to replicated and extend their results. 
+
+With any survey of the size and complexity of NHANES there will be changes and modifications that are needed.  Some are minor and likely inadvertant and others are responses to external events such as the impact that the global COVID pandemic had on the 2019-2020 cycle.  If the issues and challenges can be collected in some way, then users will not need to re-discover them, and hopefully agreed on best practicies for revising and adapting can be adopted.
+
+
+
+
+
+## Supplementary Material
 
 https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx,
 https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx?Component=LimitedAccess,
@@ -156,3 +162,4 @@ Variables in Metadata.VariableCodebook
 "Count"
 "Cumulative"
 "SkipToItem"
+
