@@ -19,20 +19,6 @@
 }
 
 
-#' Query NHANES data from Database
-#' FIXME: More information goes here.
-#'
-#' @param sql query string for Microsoft SQL Server database.
-#'
-#' @return data frame
-#' @export
-#'
-#' @examples  demo = nhanesQuery("select * from Translated.DEMO_C")
-#' @examples  demo = nhanesQuery("select * from Raw.DEMO_C")
-nhanesQuery = function(sql){
-  return(.nhanesQuery(sql))
-}
-
 #' Joint Query
 #'
 #' The jointQuery function is designed for merging and joining tables from different surveys over various years and returning the resultant data frame.

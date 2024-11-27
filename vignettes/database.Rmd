@@ -94,7 +94,7 @@ knitr::include_graphics("images/ethinicity.png")
 
 In this schema there is one table corresponding to each released table/dataset. Now, all categorical data have been translated so that the table corresponding to Figure~\@ref(fig:figgender) will now have the strings `Male` and `Female`, instead of numeric values.  This is will ensure that appropriate models are fit when the covariates represent categorical concepts.
 
-In some cases phenotypes that are primarily numeric have non-numeric values.  These arise for a variety of reasons such as limits of detection, grouping values, failures in getting lab results, the participant refused to answer or does not know the answer.  The complete list is captured in a variable in the `nhanesA` package, which is not exported.  In many cases this transformation makes it simpler to analyze the data.
+In some cases phenotypes that are primarily numeric have non-numeric values.  These arise for a variety of reasons such as limits of detection, grouping values, failures in getting lab results, the participant refused to answer or does not know the answer.  The complete list is captured in a variable in the `nhanesA` package, which is not exported.  In many cases this transformation makes it simpler to analyze the data and in other cases it introduces some data handling challenges.  A list of the values that are affected during translation are found in the `nhanesA` package.
 
 ```{r cleanseNumeric}
 tt = nhanesA:::specialNumericCodes
@@ -103,20 +103,10 @@ tt[1:5]
 
 ```
 
-When translating one can choose to modify some of the no
-
-### R functions 
-
-We use the `nhanesA` package to bootstrap the ETL process. 
-In `phonto` the `addPrimaryKey` function allows the user specifies the table and the columns that will be treated as primary keys. Specifically for the MetaData tables mentioned above, the primary keys are set accordingly.
-
-Users can insert a table into the data base using insert `insertTableDB`
-The function `dbInsertNhanesTable` is used to insert NHANES raw and translated tables into
-the database.  This is primarily used during the ETL process for building the database.  It
-may be useful to advanced users who want to modify how some tables were processed.  But extreme care should be used since that could invalidate any of the reproducibility features of using this system.
+When translating one can choose to modify some of the none of the columns.
 
 
-### Connecting with the Server
+### Connecting with the Database Server
 
 In the code below we show how to connect directly to the database and to use `dbGetQuery`
 to interact directly with the database. Users that want that sort of flexibility can simply use `DBI` and `RPostgres` to carry out a range of interactions.

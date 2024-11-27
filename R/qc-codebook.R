@@ -141,8 +141,12 @@ qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 ##' @return An object of S3 class \code{"qc_var"} with suitable print and summary methods.
 ##' @export
 ##' @author Deepayan Sarkar
-qc_var <- function(x, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab())
+qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab())
 {
+    if(!missing(tables) ) {
+      cb = metadata_cb(x, tables)
+      var = metadata_var(x, tables)
+    }
     res <- c(qc_var_multtable(x, var, cb, tab),
              qc_var_description(x, var, cb, tab),
              qc_var_saslabel(x, var, cb, tab),
