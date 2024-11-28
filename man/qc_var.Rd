@@ -6,7 +6,13 @@
 \alias{print.qc_var}
 \title{qc_var: QC on NHANES variable}
 \usage{
-qc_var(x, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab())
+qc_var(
+  x,
+  tables = tables,
+  var = metadata_var(x),
+  cb = metadata_cb(x),
+  tab = metadata_tab()
+)
 
 \method{summary}{qc_var}(object, ...)
 
