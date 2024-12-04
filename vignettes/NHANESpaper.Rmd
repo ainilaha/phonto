@@ -4,8 +4,10 @@ title: "Enhancing Statistical Analysis of Real World Data"
 author: ' Robert Gentleman, Deepayan Sarkar, Laha Ale '
 date: "2024-11-1"
 output: 
-  bookdown::html_document2: default
+  bookdown::pdf_document2:
+    toc: false
 
+bibliography: NHANESDocker.bib
   
 vignette: >
   %\VignetteIndexEntry{Enhancing Statistical Analysis of Real World Data}
@@ -26,7 +28,7 @@ Accessible large complex survey data such as that available from the National He
 
 We focus on the NHANES data and describe a system that is based on 1) Docker (www.docker.com), which allows for the detailed specification of the computational tools and resources 2) a relational database, Postgres (https://www.postgresql.org/), that supports SQL and 3) statistical software, R (www.r-project.org) and RStudio (https://posit.co/) which provide tools to support analysis and reproducibility. By releasing a single component, the Docker container, that has appropriate version numbers and can be run on virtually any hardware we simplify access and enable sharing.
 
-The R ecosystem has a long history of fostering reproducibility in scientific computing (Gentleman and Temple Lang) and the production of dynamic documents that can be training material, e.g. package vignettes, but have been extended to support authoring of books (cite Bookdown) and scientific papers where the actual code to create figures and tables is explicitly provided. More recently Dononho and others have touched on the importance of frictionless reproducibility (https://arxiv.org/abs/2310.00865). The system we are proposing would directly support these activities.  And, even more importantly the approach lends itself to a more general concept of low friction extensibility, where a paper and its results can not only be replicated, but they can be extended and enhanced with relative ease. While science relies on reproducibility it progresses through extension and adoption of new methods and paradigms.
+The R ecosystem has a long history of fostering reproducibility in scientific computing (@RepRes) and the production of dynamic documents that can be training material, e.g. package vignettes, but have been extended to support authoring of books (@xie2024) and scientific papers where the actual code to create figures and tables is explicitly provided. More recently Dononho (@donoho2024) and others have touched on the importance of frictionless reproducibility. The system we are proposing would directly support these activities.  And, even more importantly the approach lends itself to a more general concept of low friction extensibility, where a paper and its results can not only be replicated, but they can be extended and enhanced with relative ease. While science relies on reproducibility it progresses through extension and adoption of new methods and paradigms.
 
 # Methods
 
@@ -40,28 +42,28 @@ Most NHANES data are publicly available and the terms of use are available on th
 
 Specifically, we use manifests from the CDC to identify data and documentation files for downloading. These data are optionally downloaded and preprocessed on a local machine, and saved as a date-stamped snapshot in a GitHub repository (https://github.com/deepayan/nhanes-snapshot). We use functionality provided by the BiocFileCache package to manage the downloading and updating of the actual files, avoiding multiple downloads of the same file. This is achieved via wrapper functions in the cachehttp package (https://github.com/ccb-hms/cachehttp). Finally these files are processed via a set of R scripts (https://github.com/deepayan/nhanes-postgres) and / or  Python scripts (https://github.com/ccb-hms/NHANES and https://github.com/rsgoncalves/nhanes-metadata) to create SQL databases, tables, and metadata. This process is largely agnostic to the specific SQL variant used.
 
-To enable users not well-versed in SQL, we also enhance the `nhanesA` package (cite nhanesA) to use the database as an alternative source for NHANES data in a manner that is completely transparent to the end-user. We do this by using the DBI R package as an abstraction layer that can speak to multiple database variants. Individual NHANES data files are mapped to individual tables in the database, and accessing them is thus straightforward. The metadata search functionality, which is more complicated, is implemented via the `dbplyr` package which implements a dplyr grammar for DBI-compliant databases.
+To enable users not well-versed in SQL, we also enhance the `nhanesA` package (@ale2024) to use the database as an alternative source for NHANES data in a manner that is completely transparent to the end-user. We do this by using the DBI R package as an abstraction layer that can speak to multiple database variants. Individual NHANES data files are mapped to individual tables in the database, and accessing them is thus straightforward. The metadata search functionality, which is more complicated, is implemented via the `dbplyr` package (@wickham2023) which implements a dplyr grammar for DBI-compliant databases.
 
-Within the database we create three schemas: **Metadata** tables that contain information abstracted from the NHANES data, codebooks and documentation downloads (explained in more detail in the appendix); **Raw** tables that have a 1-1 correspondence with the data tables provided by the CDC and which have not been altered; and **Translated** tables that have a 1-1 correspondence to the CDC provided tables, but where the categorical variables have been translated to their character values, and in some instances other modifications are made to support appropriate use of the data.
+Within the database we create three schemas: **Metadata** tables that contain information abstracted from the NHANES data, codebooks, documentation downloads (explained in more detail in the appendix) and information relevant to the organization of container; **Raw** tables that have a 1-1 correspondence with the data tables provided by the CDC and which have not been altered; and **Translated** tables that have a 1-1 correspondence to the CDC provided tables, but where the categorical variables have been translated to their character values, and in some instances other modifications are made to support appropriate use of the data.
 
-A few public data files are excluded from the database primarily due to their size and the specialized data they contain. Some Oral microbiome testing data (collected in two cycles) are omitted because they are in non-standard formats. Four datasets containing imputed Dual Energy X-ray Absorptiometry data are omitted as their documentation is in non-standard format. In addition, some files are excluded because they are unusually large; most of these are records of physical activity monitors given to participants of the survey. These datasets can be downloaded from the CDC website and easily integrated into any workflow.
+A few public data files are excluded from the database primarily due to their size and the specialized data they contain. Some oral microbiome testing data (collected in two cycles) are omitted because they are in non-standard formats. Four datasets containing imputed Dual Energy X-ray absorptiometry data are omitted as their documentation is in non-standard format. In addition, some files are excluded because they are unusually large; most of these are records of physical activity monitors given to participants of the survey. These datasets can be downloaded from the CDC website and easily integrated into any workflow.
 
 ## Creating the Container
 
 The specific details describing how we constructed the container are given in the GitHub repository <https://github.com/deepayan/nhanes-postgres>. Succinctly, we created a Docker image derived from [rocker/tidyverse](https://hub.docker.com/r/rocker/tidyverse/), which is an Ubuntu GNU/Linux image containing R and RStudio Server, and added a PostgreSQL database containing data from NHANES.
 
-We create and update a set of environment variables, Table 1, that can be tested for so that software can determine whether it is running in this container and hence can use the corresponding tools and database. Version numbers on the container and information on the date the data were downloaded help provide the resources needed to assess reproducibility and accuracy of results. We have tried to engineer the system so that any relational database can be used. Another goal of this effort is to allow software packages such as nhanesA to be engineered so they function in the same way whether they are used in the container or not. This strategy enables the creation of documents and tools that can function whether or not the container is being used.
+We create and update a set of environment variables, Table 1, that can be tested for so that software can determine whether it is running in this container and hence can use the corresponding tools and database. Version numbers on the container and information on the date the data were downloaded help provide the resources needed to assess reproducibility and accuracy of results. We have tried to engineer the system so that any relational database can be used. Another goal of this effort is to allow software packages such as `nhanesA` to be engineered so they function in the same way whether they are used in the container or not. This strategy enables the creation of documents and tools that can function whether or not the container is being used.
 
-Variable                       | Value                    
----------------------------    | ------------------------ 
-EPICONNECTOR_CONTAINER_VERSION | Version Number         
-EPICONNECTOR_COLLECTION_DATE   | Date data were accessed 
-EPICONNECTOR_CONTAINER_DB      | Type of database used
+Variable          | Value                    
+---------------   | ------------------------ 
+CONTAINER_VERSION | Version number for the Container        
+COLLECTION_DATE   | Date data were downloaded 
+NHANES_TABLE_BASE | Location of HTML documentation, environment variable
 
 
 ## Accessing the Data
 
-Since the data are stored in a standard Postgres database users can access the data either directly using SQL from any language or system that they prefer.  We have chosen to use the dplyr package as the basis for our interactions with the backend database since it can be configured to work with a variety of different database backends. We have recently worked with the primary author of the nhanesA package to modify it to access data from this database when it is run in the container.
+Since the data are stored in a standard Postgres database users can access the data either directly using SQL from system that they prefer.
 
 ## GitHub
 
@@ -73,19 +75,19 @@ Docker is a technology that enables the creation of virtual machines that can ru
 
 ## The phonto package
 
-   We created an R package named phonto, (https://github.com/ainilaha/phonto) that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (jointQuery) and within cycles across tables (unionQuery).  There are functions to help identify variables that are not phenotypes, such as SEQN which is a unique identifier for each participant, and hence should not be used in any analyses.
-   Access to the main metadata tables from R is provided by a set of functions and users can than explore and manipulate copies of those tables in R.  Functions to obtain elements such as column names, dimensions and so on are also provided.
+We created an R package named phonto, (https://github.com/ainilaha/phonto) that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (`jointQuery`) and within cycles across tables (`unionQuery`).  The `unionQuery` function can be thought of as a way to join tables, within a cycle.  For this we use `SEQN` as the primary key and return a data
+
+
+
+There are functions to help identify variables that are not phenotypes, such as `SEQN` which is a unique identifier for each participant, and hence should not be used in any analyses.
 
 ## The data and the database
 
 We create a cache of all publicly available data files and all HTML documentation files.  This cache is routinely updated using a strategy that only downloads files that have changed. We then use routines in the nhanesA package to create our extract, transform, load (ETL) process. This creates tables in the database that correspond to the raw (as supplied) and translated (categorical variables are translated from integer values to the appropriate strings) as well as three metadata tables.
 
-QuestionnaireDescriptions - one row per table, all information about the table, use constraints, download errors
-QuestionnaireVariables - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
-VariableCodebook - one row for each possible value for each variable; describes the coded values for all categorical variables.
-
-
-We carry out a small amount of curation. 
+`QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
+`QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
+`VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
 
 We crawled the NHANES  data from the CDC website and integrated it into a PostgreSQL database hosted within a Docker container. This approach allows users to access the database using any programming language or tool of their choice, although we have provided R packages to facilitate data manipulation for researchers. The provided tools not only enhance the efficiency of researchers' work but also make it easier to share their results and improve reproducibility in their analyses.
 The diagram (Figure X) illustrates the workflow of our system:
@@ -105,11 +107,9 @@ JointQuery and unionQuery
 
 ### Using the Database
 
-The database can easily be queried to perform across cycle analyses. In Figure~\ref@fig:demoplot we summarize
-the number of participants by recorded ethnicity and gender by cycle.
-**FIXME**: once phonto is updated..
+The database can easily be queried to perform across cycle analyses. In Figure \@ref(fig:demoplot) we summarize the number of participants by recorded ethnicity and gender by cycle.
 
-```{r getalldemo, error = TRUE, echo=FALSE}
+```{r getalldemo, error = TRUE, results='hide', echo=FALSE}
 ##Code from docker-examples.rmd by Deepayan
 library(nhanesA)
 library(kableExtra)
@@ -120,7 +120,7 @@ object.size(all_demo_data) # ~45 MB
 sapply(all_demo_data, dim)
 ```
 
-```{r combinedemo, echo=FALSE}
+```{r combinedemo, echo=FALSE, results='hide'}
 all_demo_data <- head(all_demo_data, -1)
 common_vars <- lapply(all_demo_data, names) |> Reduce(f = intersect)
 common_vars
@@ -133,7 +133,7 @@ demo_combined$cycle = dcm
 dim(demo_combined)
 ```
 
-```{r demoplot,fig.width=12, fig.height=7, fig.caption="", echo=FALSE}
+```{r demoplot, fig.width=12, fig.height=7, fig.cap="Ethnicity by Sex and Cycle", echo=FALSE}
 library("lattice")
 demo_combined |>
     xtabs(~ cycle + RIAGENDR + RIDRETH1, data = _) |>
@@ -147,8 +147,7 @@ demo_combined |>
 
 One must be cautious when combining data across
 cycles because the NHANES data may be inconsistent.
-A simple example involves `DMDEDUC3`
-variable from the demography survey, which records education level of children and youth. Notice
+A simple example involves `DMDEDUC3` variable from the demography survey, which records education level of children and youth. Notice
 that the values (column labels) are inconsistent across cycles.  While it is usually easy to fix an anamaly once detected finding all anamalies is very challenging. 
 
 ```{r changes, echo=FALSE}
@@ -157,15 +156,15 @@ mm = metadata_cb(variable = "DMDEDUC3")
 
 mm2 = dplyr::filter(mm, TableName %in% demo_all)
 
-kable( xtabs( ~ TableName + ValueDescription, mm2)[,1:4], caption="Differences across cycles")
+kable( xtabs( ~ TableName + ValueDescription, mm2)[,1:4], caption="Typographic differences across cycles")
 
 ```
 
 # Discussion
 
-We believe that by creating a resource of this nature we can help enhance reproducibility and foster the adoption of more sophisticated and appropriate statistical methods. When users are willing to share their code then others will be easily able to replicated and extend their results. We hope to be able to create a sharable resource of analysis documents, ideally in the form of notebooks, which could be coded in different languages. These would be dynamic in the sense described in Gentleman and Temple Lang (cite).
+We believe that by creating a resource of this nature we can help enhance reproducibility and foster the adoption of more sophisticated and appropriate statistical methods. When users are willing to share their code then others will be easily able to replicated and extend their results. We hope to be able to create a sharable resource of analysis documents, ideally in the form of notebooks, which could be coded in different languages. These would be dynamic in the sense described in @RepRes.
 
-With any survey of the size and complexity of NHANES inconsistencies are bound to appear.  Some are minor and likely inadvertent and others are responses to external events such as the impact that the global COVID pandemic had on the 2019-2020 cycle.  If the issues and challenges can be collected in some way, then users will not need to re-discover them, and hopefully agreed on best practices for revising and adapting can be adopted.
+With any survey of the size and complexity of NHANES inconsistencies are bound to appear.  Some are minor and likely inadvertent and others are responses to external events such as the impact that the global COVID pandemic had on the 2019-2020 cycle.  We believe that there is value in having a resource that can provide a mechanism for discussing and resolving these issues so that users will not need to re-discover them. This can lead to agreed upon best practices for revising and adapting.
 
 For analysis, we have found that use of the survey weights is sporadic, even though accounting for them is essential for most inferences. Having high quality tutorials that are based on the tasks that users need to perform will likely increase the awareness of the need for these methods as well as their adoption.
 
@@ -174,8 +173,12 @@ For analysis, we have found that use of the survey weights is sporadic, even tho
 
 The database design based on work done at Harvard Medical school with the Center (now Core) for Computational Biomedicine, (https://github.com/ccb-hms/nhanes-database) and we have benefited greatly from our interactions with them. 
 
+# References
 
-## Supplementary Material
+<div id="refs"></div>
+
+
+# Supplementary Material
 
 https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx,
 https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx?Component=LimitedAccess,
@@ -183,43 +186,31 @@ https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Demographics
 In Figure S1 we show the documentation from the DEMO table for cycle J.
 
 
-Variables in Metadata.QuestionnaireVariables
+## `Metadata.QuestionnaireVariables`
 
-One row for each table/variable combination.  This table captures the information in the per variables descriptions, similar to that in Figure S1. Additional information informs on the table name (DEMO_J for the table in Figure S1),  whether there are use constraints.  The IsPhenotype column is one we curate and it indicates whether the variable is a phenotype and could be used as a covariate or a response.  Variables such as individual identifier, SEQN, or the survey weights should not be used as variables in regression models, for example.
+This table has one row for each NHANES table/variable combination.  This table captures the information in the variables descriptions, similar to that in Figure S1. Additional information informs on the table name (DEMO_J for the table in Figure S1),  whether there are use constraints.  The IsPhenotype column is one we curate and it indicates whether the variable is a phenotype and could be used as a covariate or a response.  Variables such as individual identifier, SEQN, or the survey weights should not be used as variables in regression models, for example.
 
-"Variable"
-"TableName"
-"SasLabel"
-"Description"
-"EnglishInstructions"
-"Target"
-"UseConstraints"
-"IsPhenotype"
-"OntologyMapped"
+The column names for each of these metadata tables are are given in the tables below. 
 
+```{r variablecodebook, echo=FALSE}
+zz = phonto:::metadata_cb()
+knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
+   col.names="Variables") |>
+  kable_styling(latex_options = "HOLD_position")
 
-Variables in Metadata.QuestionnaireDescriptions
+```
 
 
+```{r QuestionnaireVariables, echo=FALSE}
+zz = phonto:::metadata_var()
+knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Variables Table",
+   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
 
-"TableName"
-"Description"
-"BeginYear"
-"EndYear"
-"DataGroup"
-"UseConstraints"
-"DocFile"
-"DataFile"
-"DatePublished"
+```
 
+```{r QuestionnaireDescriptions, echo=FALSE}
+zz = phonto:::metadata_tab()
+knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
+   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
 
-Variables in Metadata.VariableCodebook
-
-"Variable"
-"TableName"
-"CodeOrValue"
-"ValueDescription"
-"Count"
-"Cumulative"
-"SkipToItem"
-
+```

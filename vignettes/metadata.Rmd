@@ -25,6 +25,17 @@ knitr::opts_chunk$set(
  In this vignette we describe the NHANES metadata and give some examples of how it can be used to ensure that the variables and tables used in an analysis are measuring the same things, are reported in the same units, targeted the same demographics and a host of other challenges that might arise.
  We assume that the reader is using either a Docker container with a copy of the NHANES database, or that they have a locally available NHANES database.  These tools can be used with the `nhanesA` package but that will likely be quite slow and cumbersome.
   Details on the NHANES data etc are described in the `Quick Start` vignette and readers should be familiar with that document.
+  
+In this vignette we are interacting directly with the Postgres (or other backends). The first thing to do is to determine which version of the data you are working with. The next code chunk shows how to access that information.  When working directly with the database we use the `phonto` package which has established a connection, `phonto:::cn()`, which you should use.
+
+```{r versionInfo}
+VersionInfo <- dplyr::tbl(phonto:::cn(), I(nhanesA:::MetadataTable("VersionInfo")))
+VersionInfo <- as.data.frame(VersionInfo)
+VersionInfo
+```
+
+You can see what date the underlying data were collected on as well as what version of the Docker Container is being used.  This information should be included in any papers that are intended to be reproducible.
+
  
 ## NHANES Metadata
 
@@ -43,6 +54,8 @@ Below are examples of two of the variables, the first SEQN, is the sequence numb
 ![SEQN](images/seqn.png){width=80%}
 
 ![weight](images/weight.png){width=80%}
+
+In order to facilitate easy access to the documentation we have replicated all HTML files in the Docker container. The files are organized by cycle and the top level directory is stored as the environment variable `NHANES_TABLE_BASE`.  Using the `browseNHANES` function within the container will access the local files whenever a file name is specified with the `nh_table` argument.  In the future we plan to enable natural language processing (NLP) on these files to enable augmentation of analysis work with new developments in AI.
 
 ### Metadata Tables
 
