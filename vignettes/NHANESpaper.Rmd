@@ -25,7 +25,8 @@ vignette: >
 library(phonto)
 ```
 
-```{r, include=FALSE}
+```{r, include=FALSE, eval=FALSE}
+##turn this on if you get Latex errors
 options(tinytex.verbose = TRUE)
 ```
 
@@ -92,29 +93,25 @@ There are functions to help identify variables that are not phenotypes, such as 
 
 We create a cache of all publicly available data files and all HTML documentation files.  This cache is routinely updated using a strategy that only downloads files that have changed. We then use routines in the nhanesA package to create our extract, transform, load (ETL) process. This creates tables in the database that correspond to the raw (as supplied) and translated (categorical variables are translated from integer values to the appropriate strings) as well as three metadata tables.
 
-`QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
-`QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
-`VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
+We downloaded NHANES data from the CDC website then processed and loaded the data into a PostgreSQL database hosted within a Docker container. We added R functionality to facilitate data manipulation and analysis. These tools not only enhance the efficiency of researchers' work but also make it easier to share their results and improve reproducibility in their analyses.
 
-We crawled the NHANES  data from the CDC website and integrated it into a PostgreSQL database hosted within a Docker container. This approach allows users to access the database using any programming language or tool of their choice, although we have provided R packages to facilitate data manipulation for researchers. The provided tools not only enhance the efficiency of researchers' work but also make it easier to share their results and improve reproducibility in their analyses.
 The diagram (Figure X) illustrates the workflow of our system:
 a) ETL Process: The data extraction, transformation, and loading (ETL) process begins with crawling data from the CDC website and transforming it into a structured format suitable for analysis, which is then loaded into a PostgreSQL database within the Docker environment.
 b) User Community: The system is designed to be versatile, supporting a wide range of programming languages and statistical tools, including built-in RStudio with custom R packages (nhanesA, PHONTO) to streamline the analysis process.
 c) Reproducible Outputs: The system facilitates the creation of reproducible outputs such as notebooks, R Markdown files, and GitHub repositories, enabling researchers to share their work and collaborate more effectively.
 
-The NHANES data were collected using a complex, four-stage sample design, and appropriate analyses of the data typically involve using specialized survey analysis procedures that use weights to account for the sampling scheme. Briefly, each sampled person is assigned a weight reflecting the number of people in the broader population that the individual represents. We recommend using the survey package to perform these analyses. We provide examples of using the weights with the nhanesA and phonto packages and the CDC provides detailed documentation as well.  
 
 ### The metadata tables
 
-A primary advantage of having all data in a relational database is that one can make comparisons both across tables within a cycle or across cycles.  These allow the analyst to identify potential problems and inconsistencies in the data.  Ultimately, we believe that many of these can be adjusted for automatically.
-Finding Inconsistencies
+A primary advantage of having all data in a relational database is that one can make comparisons both across tables within a cycle or across cycles. These allow the analyst to identify potential problems and inconsistencies in the data.
 
-Describe qc_var, the metadata_tab/var/db
-JointQuery and unionQuery 
+
 
 ### Using the Database
 
-The database can easily be queried to perform across cycle analyses. In Figure \@ref(fig:demoplot) we summarize the number of participants by recorded ethnicity and gender by cycle.
+The NHANES data were collected using a complex, four-stage sample design, and appropriate analyses of the data typically involve using specialized survey analysis procedures that use weights to account for the sampling scheme. Briefly, each sampled person is assigned a weight reflecting the number of people in the broader population that the individual represents. We recommend using the survey package to perform these analyses. We provide examples of using the weights with the `nhanesA` and `phonto` packages and the CDC provides detailed documentation as well.  
+
+One of the advantages of having the data in one database is that it can easily be queried to perform across cycle analyses. In Figure \@ref(fig:demoplot) we summarize the number of participants by recorded ethnicity and gender by cycle.
 
 ```{r getalldemo, error = TRUE, results='hide', echo=FALSE}
 ##Code from docker-examples.rmd by Deepayan
@@ -151,6 +148,14 @@ demo_combined |>
             par.settings = simpleTheme(pch = 16),
             auto.key = list(columns = 3))
 ```
+
+When analyzing data for a single cycle we suggest that it is easiest to use the R functions for merging dataframes.  Within a cycle the `SEQN` variable is a unique identifier for each individual and joins across tables are easily carried out.  
+
+When analyzing data across cycles there can be substantial issues.  In particular the same table might have different columns, or a variable might have changed its units, or questions and answers may have changed and the population targeted might vary, just to name a few of the issues.  Analysts will want to be know when and where these differences occur and to support those investigations we have included functions to perform quality assessment and control.
+
+The function `qc_var` lets the user specify a set of tables, and a set of variables for examination.  The output is a list of comparisons, such as "description_mismatch", "saslabel_mismatch", or "target_mismatch" and each of those is list of variables for which we have some indication of a mismatch in that metadata across the tables.  We show an example output in the appendix.
+
+
 
 One must be cautious when combining data across
 cycles because the NHANES data may be inconsistent.
@@ -193,11 +198,31 @@ https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Demographics
 In Figure S1 we show the documentation from the DEMO table for cycle J.
 
 
-## `Metadata.QuestionnaireVariables`
+## The Metadata Schema
+
+Within the database metadata are stored in their own schema. There are three tables that describe the NHANES data:
+
+`QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
+`QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
+`VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
+
+As well as a table that provides version information and the date the data were downloaded.
+
+
+`QuestionnaireVariables`
 
 This table has one row for each NHANES table/variable combination.  This table captures the information in the variables descriptions, similar to that in Figure S1. Additional information informs on the table name (DEMO_J for the table in Figure S1),  whether there are use constraints.  The IsPhenotype column is one we curate and it indicates whether the variable is a phenotype and could be used as a covariate or a response.  Variables such as individual identifier, SEQN, or the survey weights should not be used as variables in regression models, for example.
 
-The column names for each of these metadata tables are are given in the tables below. 
+```{r QuestionnaireVariables, echo=FALSE}
+zz = phonto:::metadata_var()
+knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Variables Table",
+   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
+
+```
+
+
+The `VariableCodeBook` table has one row for each possible value for a variable. So,
+for each table, and within that for each variable, there are multiple rows describing the values that variable can have. The column lables of the `VariableCodeBook` table are below.
 
 ```{r variablecodebook, echo=FALSE}
 zz = phonto:::metadata_cb()
@@ -207,17 +232,11 @@ knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
 
 ```
 
-
-```{r QuestionnaireVariables, echo=FALSE}
-zz = phonto:::metadata_var()
-knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Variables Table",
-   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
-
-```
+And last we describe the `QuestionnaireDescriptions` table. It has one row for for each questionnaire or table.  The data include the year that the questionnaire was used, the data group (demographics, laboratory etc), whether there are use constraints on the data, the URLs used to obtain the data and the documentation and the release date. The release date can change if the data are modified by the CDC.
 
 ```{r QuestionnaireDescriptions, echo=FALSE}
 zz = phonto:::metadata_tab()
-knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
+knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Descriptions Table",
    col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
 
 ```
