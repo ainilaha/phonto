@@ -6,6 +6,9 @@ date: "2024-11-1"
 output: 
   bookdown::pdf_document2:
     toc: false
+    
+header-includes:
+  - \usepackage{float}
 
 bibliography: NHANESDocker.bib
   
@@ -20,6 +23,10 @@ vignette: >
 
 ```{r loadlibs, echo=FALSE}
 library(phonto)
+```
+
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
 ```
 
 # Introduction
