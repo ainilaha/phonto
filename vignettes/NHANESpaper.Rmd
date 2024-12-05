@@ -177,9 +177,12 @@ The database design based on work done at Harvard Medical school with the Center
 
 # Supplementary Material
 
-https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx,
-https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx?Component=LimitedAccess,
-https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Demographics,
+The following are useful pages from the CDC NHANES websits
+
+  * https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx
+  * https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx?Component=LimitedAccess
+  * https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Demographics
+  
 In Figure S1 we show the documentation from the DEMO table for cycle J.
 
 
@@ -187,11 +190,10 @@ In Figure S1 we show the documentation from the DEMO table for cycle J.
 
 Within the database metadata are stored in their own schema. There are three tables that describe the NHANES data:
 
-`QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
-`QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
-`VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
-
-As well as a table that provides version information and the date the data were downloaded.
+  * `QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
+  * `QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
+  * `VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
+  * `VersionInfo - provides version information and the date the data were downloaded
 
 
 `QuestionnaireVariables`
