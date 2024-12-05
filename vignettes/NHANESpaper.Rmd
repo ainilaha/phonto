@@ -88,7 +88,9 @@ We create a cache of all publicly available data files and all HTML documentatio
 
 We downloaded NHANES data from the CDC website then processed and loaded the data into a PostgreSQL database hosted within a Docker container. We added R functionality to facilitate data manipulation and analysis. These tools not only enhance the efficiency of researchers' work but also make it easier to share their results and improve reproducibility in their analyses.
 
-The diagram (Figure X) illustrates the workflow of our system:
+![An overview of the ecosystem provided. Panel a) shows the extract transform load (ETL) process. Panel b) Shows examples of tools provide (top) and tools that could easily be used.  Panel c) Notes how these user communities can create reproducible outputs.](images/nhanes1.png)
+
+Figure~\ref{nhanesFig} illustrates the workflow of our system:
 a) ETL Process: The data extraction, transformation, and loading (ETL) process begins with crawling data from the CDC website and transforming it into a structured format suitable for analysis, which is then loaded into a PostgreSQL database within the Docker environment.
 b) User Community: The system is designed to be versatile, supporting a wide range of programming languages and statistical tools, including built-in RStudio with custom R packages (nhanesA, PHONTO) to streamline the analysis process.
 c) Reproducible Outputs: The system facilitates the creation of reproducible outputs such as notebooks, R Markdown files, and GitHub repositories, enabling researchers to share their work and collaborate more effectively.
