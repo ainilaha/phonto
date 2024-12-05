@@ -56,11 +56,18 @@ Within the database we create three schemas: **Metadata** tables that contain in
 
 A few public data files are excluded from the database primarily due to their size and the specialized data they contain. Some oral microbiome testing data (collected in two cycles) are omitted because they are in non-standard formats. Four datasets containing imputed Dual Energy X-ray absorptiometry data are omitted as their documentation is in non-standard format. In addition, some files are excluded because they are unusually large; most of these are records of physical activity monitors given to participants of the survey. These datasets can be downloaded from the CDC website and easily integrated into any workflow.
 
-## Creating the Container
+We create open-source software packages in GitHub so that others can access them and ideally provide us with feedback and bug reports. A complete list of the GitHub repositories and their capabilities is given in Supplement Table 1.
+
+## Docker
+
+Docker is a technology that enables the creation of virtual machines that can run on virtually any hardware such as laptops, servers, or in cloud environments. This provides substantial flexibility in where the computation happens and also provides a straightforward means for sharing all the computing infrastructure with others. All they need to do is obtain a copy of the container which could then be run locally. Strictly speaking, Docker is not essential to many of the ideas we propose. Having a Postgres database that runs on a local server would provide most of the benefits. However, for reproducibility we favor the use of Docker containers as it is easier to ensure that all software components are identified. There are established mechanisms for sharing Docker containers as well as functionality for defining and running multi-container applications.
 
 The specific details describing how we constructed the container are given in the GitHub repository <https://github.com/deepayan/nhanes-postgres>. Succinctly, we created a Docker image derived from [rocker/tidyverse](https://hub.docker.com/r/rocker/tidyverse/), which is an Ubuntu GNU/Linux image containing R and RStudio Server, and added a PostgreSQL database containing data from NHANES.
 
-We create and update a set of environment variables, Table 1, that can be tested for so that software can determine whether it is running in this container and hence can use the corresponding tools and database. Version numbers on the container and information on the date the data were downloaded help provide the resources needed to assess reproducibility and accuracy of results. We have tried to engineer the system so that any relational database can be used. Another goal of this effort is to allow software packages such as `nhanesA` to be engineered so they function in the same way whether they are used in the container or not. This strategy enables the creation of documents and tools that can function whether or not the container is being used.
+We create and update a set of environment variables, Table 1, that can be tested for so that software can determine whether it is running in this container and hence can use the corresponding tools and database. Version numbers on the container and information on the date the data were downloaded help provide the resources needed to assess reproducibility and accuracy of results. 
+
+We have tried to engineer the system so that any relational database can be used. Another goal of this effort is to allow software packages such as `nhanesA` to be engineered so they function in the same way whether they are used in the container or not. This strategy enables the creation of documents and tools that can function whether or not the container is being used. Since the data are stored in a standard Postgres database users can access the data either directly using SQL from system that they prefer simply by accessing the database directly via the Docker container.
+
 
 Variable          | Value                    
 ---------------   | ------------------------ 
@@ -69,23 +76,9 @@ COLLECTION_DATE   | Date data were downloaded
 NHANES_TABLE_BASE | Location of HTML documentation, environment variable
 
 
-## Accessing the Data
-
-Since the data are stored in a standard Postgres database users can access the data either directly using SQL from system that they prefer.
-
-## GitHub
-
-We create open-source software packages in GitHub so that others can access them and ideally provide us with feedback and bug reports. A complete list of the GitHub repositories and their capabilities is given in Supplement Table 1.
-
-## Docker
-
-Docker is a technology that enables the creation of virtual machines that can run on virtually any hardware such as laptops, servers, or in cloud environments. This provides substantial flexibility in where the computation happens and also provides a straightforward means for sharing all the computing infrastructure with others. All they need to do is obtain a copy of the container which could then be run locally. Strictly speaking, Docker is not essential to many of the ideas we propose. Having a Postgres database that runs on a local server would provide most of the benefits. However, for reproducibility we favor the use of Docker containers as it is easier to ensure that all software components are identified. There are established mechanisms for sharing Docker containers as well as functionality for defining and running multi-container applications.
-
 ## The phonto package
 
-We created an R package named phonto, (https://github.com/ainilaha/phonto) that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (`jointQuery`) and within cycles across tables (`unionQuery`).  The `unionQuery` function can be thought of as a way to join tables, within a cycle.  For this we use `SEQN` as the primary key and return a data
-
-
+We created an R package named phonto, (https://github.com/ainilaha/phonto) that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (`jointQuery`).
 
 There are functions to help identify variables that are not phenotypes, such as `SEQN` which is a unique identifier for each participant, and hence should not be used in any analyses.
 
@@ -100,12 +93,7 @@ a) ETL Process: The data extraction, transformation, and loading (ETL) process b
 b) User Community: The system is designed to be versatile, supporting a wide range of programming languages and statistical tools, including built-in RStudio with custom R packages (nhanesA, PHONTO) to streamline the analysis process.
 c) Reproducible Outputs: The system facilitates the creation of reproducible outputs such as notebooks, R Markdown files, and GitHub repositories, enabling researchers to share their work and collaborate more effectively.
 
-
-### The metadata tables
-
 A primary advantage of having all data in a relational database is that one can make comparisons both across tables within a cycle or across cycles. These allow the analyst to identify potential problems and inconsistencies in the data.
-
-
 
 ### Using the Database
 
@@ -153,14 +141,10 @@ When analyzing data for a single cycle we suggest that it is easiest to use the 
 
 When analyzing data across cycles there can be substantial issues.  In particular the same table might have different columns, or a variable might have changed its units, or questions and answers may have changed and the population targeted might vary, just to name a few of the issues.  Analysts will want to be know when and where these differences occur and to support those investigations we have included functions to perform quality assessment and control.
 
-The function `qc_var` lets the user specify a set of tables, and a set of variables for examination.  The output is a list of comparisons, such as "description_mismatch", "saslabel_mismatch", or "target_mismatch" and each of those is list of variables for which we have some indication of a mismatch in that metadata across the tables.  We show an example output in the appendix.
+The function `qc_var` lets the user specify a set of tables, and a set of variables for examination.  The output is a list of comparisons, such as "description_mismatch", "saslabel_mismatch", or "target_mismatch" and each of those is list of variables for which we have some indication of a mismatch in the metadata across the tables.  
 
-
-
-One must be cautious when combining data across
-cycles because the NHANES data may be inconsistent.
-A simple example involves `DMDEDUC3` variable from the demography survey, which records education level of children and youth. Notice
-that the values (column labels) are inconsistent across cycles.  While it is usually easy to fix an anamaly once detected finding all anamalies is very challenging. 
+An example inconsistency involves the `DMDEDUC3` variable from the demography survey, which records education level of children and youth. Notice
+that the values (column labels) are inconsistent across cycles. This merely typographic change would have consequences in the modeling if it were not rectified.  While it is usually easy to fix an anomaly once detected finding all anomalies is very challenging. 
 
 ```{r changes, echo=FALSE}
 
@@ -174,12 +158,11 @@ kable( xtabs( ~ TableName + ValueDescription, mm2)[,1:4], caption="Typographic d
 
 # Discussion
 
-We believe that by creating a resource of this nature we can help enhance reproducibility and foster the adoption of more sophisticated and appropriate statistical methods. When users are willing to share their code then others will be easily able to replicated and extend their results. We hope to be able to create a sharable resource of analysis documents, ideally in the form of notebooks, which could be coded in different languages. These would be dynamic in the sense described in @RepRes.
+We believe that by creating a resource of this nature we can help enhance reproducibility and foster the adoption of more sophisticated and appropriate statistical methods. When users are willing to share their code then others will be easily able to replicated and extend their results. We hope to be able to create a sharable resource of analysis documents, ideally in the form of notebooks, which could be coded in different languages. These would be dynamic in the sense described in @RepRes. For example, we have found that use of the survey weights is sporadic, even though accounting for them is essential for most inferences. Having high quality tutorials that are based on the tasks that users need to perform will likely increase the awareness of the need for these methods as well as their adoption.
 
 With any survey of the size and complexity of NHANES inconsistencies are bound to appear.  Some are minor and likely inadvertent and others are responses to external events such as the impact that the global COVID pandemic had on the 2019-2020 cycle.  We believe that there is value in having a resource that can provide a mechanism for discussing and resolving these issues so that users will not need to re-discover them. This can lead to agreed upon best practices for revising and adapting.
 
-For analysis, we have found that use of the survey weights is sporadic, even though accounting for them is essential for most inferences. Having high quality tutorials that are based on the tasks that users need to perform will likely increase the awareness of the need for these methods as well as their adoption.
-
+Lastly we want to call attention to the ideas of frictionless reproducibility and low friction extensibility (e.g. @donoho2024). Enabling others to very easily replicate and extend research results will help everyone make better use of the NHANES data resource.  Good statistical practice can be enabled using the tools we describe.
 
 ## Acknowledgements
 
