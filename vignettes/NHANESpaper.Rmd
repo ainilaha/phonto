@@ -141,12 +141,16 @@ demo_combined |>
 
 When analyzing data for a single cycle we suggest that it is easiest to use the R functions for merging dataframes.  Within a cycle the `SEQN` variable is a unique identifier for each individual and joins across tables are easily carried out.  
 
-When analyzing data across cycles there can be substantial issues.  In particular the same table might have different columns, or a variable might have changed its units, or questions and answers may have changed and the population targeted might vary, just to name a few of the issues.  Analysts will want to be know when and where these differences occur and to support those investigations we have included functions to perform quality assessment and control.
+![An example of the documentation for a single variable. The values associated with Variable Name, SAS Label and Target are extracted and used as metadata. The table describes the code used in the raw SAS data file, the Value Description column gives the English description of what the code means. Counts indicate how many individuals in that cycle are in each group (row) and the Skip to Item column is used for survey administration. The next question asked can depend on what answer the participant gave.](images/SMQ661.png){#fig:smoking}
+```{r smokingEx, echo=FALSE, include=FALSE}
+xx = metadata_var("SMQ661")
 
-The function `qc_var` lets the user specify a set of tables, and a set of variables for examination.  The output is a list of comparisons, such as "description_mismatch", "saslabel_mismatch", or "target_mismatch" and each of those is list of variables for which we have some indication of a mismatch in the metadata across the tables.  
+```
+
+When analyzing data across cycles there can be substantial issues. In Figure \ref{fig:smoking} we show the documentation for one variable, SMQ661.  This variable appears in `r nrow(xx)` cycles: `r paste(xx$TableName, sep=", ")`. When using this variable across cycles it is important to check for consistency in its definition and use.  The function `qc_var` tests for consistency of a single variable across specified set of tables. Currently we test for consistency of the SAS Label, the Target (who will be asked the questions), the description (English Text) and whether or not the variable is used in more than one table within a cycle. There are many other challenges that can occur such as a change in units across cycles, or the set of answers may have changed, just to name a few of the issues.  Analysts will want to know when and where these differences occur.
 
 An example inconsistency involves the `DMDEDUC3` variable from the demography survey, which records education level of children and youth. Notice
-that the values (column labels) are inconsistent across cycles. This merely typographic change would have consequences in the modeling if it were not rectified.  While it is usually easy to fix an anomaly once detected finding all anomalies is very challenging. 
+that the values (column labels) are inconsistent across cycles. This typographic change will have consequences in modeling if it is not rectified.
 
 ```{r changes, echo=FALSE}
 

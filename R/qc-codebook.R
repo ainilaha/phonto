@@ -27,16 +27,19 @@
 ##' \code{metadata_cb} retrieves data from the VariableCodebook table,
 ##' \code{metadata_var} retrieves data from the QuestionnaireVariables table
 ##' and \code{metadata_tab} retrieves data from the QuestionnaireDescriptions table.
-##' Where appropriate the returned value can be a subset for a single variable, or 
+##' Where appropriate the returned value can be a subset for a single variable, or
 ##' NHANES table. The contents of these tables is described in the MetaData vignette for the
 ##' package.
 ##'
 ##' @rdname MetadataTables
 ##' @aliases metadata_cb metadata_tab metadata_var
 ##' @title Metadata Tables : Access Postgres DB
-##' @param variable Character string naming a variable in one or more NHANES tables 
+##' @param variable Character string naming a variable in one or more NHANES tables
 ##' @param table Character string naming one NHANES table
 ##' @return A dataframe or tibble with the appropriate subset of the metadata table.
+##' @details metadata_var accesses the QuestionnaireVariables metadata table.
+##' metadata_cb accesses the VariableCodebook metadata table.
+##' metadata_tab accesses the QuestionnaireDescriptions table.
 ##' @examples
 ##' ex1 = metadata_cb(variable = "LBDLDL")
 ##' ex2 = metadata_var(table = "DEMO_D")
@@ -59,8 +62,10 @@ metadata_tab <- function(table = NULL) {
 
 ## The specific types of discrepancies we look for are:
 
-## - Whether appears in multiple tables in a given cycle
-
+## - Whether x appears in multiple tables in a given cycle
+## - var is the result of a call to metadata_var, cb a result of a call to metadata_cb
+## - and tab a result of a call to metadata_tb : these calls may have restricted the entries in
+## - those tables
 ## If yes, should be followed up by a check of whether values are consistent
 
 qc_var_multtable <- function(x, var, cb, tab)
@@ -75,9 +80,9 @@ qc_var_multtable <- function(x, var, cb, tab)
     }
     return(NULL)
 }
-    
-## - Inconsistency in Description / SasLabel (mostly benign)
 
+## - Inconsistency in Description / SasLabel (mostly benign)
+## - qc_var doesn't have an option to pass along ignore.case
 qc_var_description <- function(x, var, cb, tab, ignore.case = FALSE)
 {
     description <- subset(var, Variable == x)[["Description"]]
@@ -86,7 +91,7 @@ qc_var_description <- function(x, var, cb, tab, ignore.case = FALSE)
     if (length(tt) > 1) list(description_mismatch = table(description))
     else NULL
 }
-    
+
 
 qc_var_saslabel <- function(x, var, cb, tab, ignore.case = FALSE)
 {
@@ -97,6 +102,7 @@ qc_var_saslabel <- function(x, var, cb, tab, ignore.case = FALSE)
     else NULL
 }
 
+## compare the targeting of the question
 qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 {
     target <- subset(var, Variable == x)[["Target"]]
@@ -131,15 +137,22 @@ qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 
 
 
-##' QC report for a variable in NHANES
+##' QC report for a single variable in NHANES
 ##'
 ##' @title qc_var: QC on NHANES variable
-##' @param x Character string naming a variable in one or more NHANES tables 
+##' @param x Character vector of length one, naming a variable in one or more NHANES tables
 ##' @param var Optional data frame containing variable metadata
 ##' @param cb Optional data frame containing codebook metadata
 ##' @param tab Optional data frame containing table metadata
 ##' @return An object of S3 class \code{"qc_var"} with suitable print and summary methods.
 ##' @export
+##' @details
+##' The arguments var, cb and tab, will be default use the corresponding metadata tables (Variables, CodeBook and Questionnaires).
+##'
+##' @examples
+##' t1 = qc_var("DMDEDUC3")
+##' ## restrict the tables
+##' t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
 ##' @author Deepayan Sarkar
 qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab())
 {

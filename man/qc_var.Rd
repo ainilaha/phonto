@@ -19,7 +19,7 @@ qc_var(
 \method{print}{qc_var}(x, ...)
 }
 \arguments{
-\item{x}{Character string naming a variable in one or more NHANES tables}
+\item{x}{Character vector of length one, naming a variable in one or more NHANES tables}
 
 \item{var}{Optional data frame containing variable metadata}
 
@@ -35,7 +35,15 @@ qc_var(
 An object of S3 class \code{"qc_var"} with suitable print and summary methods.
 }
 \description{
-QC report for a variable in NHANES
+QC report for a single variable in NHANES
+}
+\details{
+The arguments var, cb and tab, will be default use the corresponding metadata tables (Variables, CodeBook and Questionnaires).
+}
+\examples{
+t1 = qc_var("DMDEDUC3")
+## restrict the tables
+t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
 }
 \author{
 Deepayan Sarkar

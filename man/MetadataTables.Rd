@@ -30,6 +30,10 @@ and \code{metadata_tab} retrieves data from the QuestionnaireDescriptions table.
 Where appropriate the returned value can be a subset for a single variable, or
 NHANES table. The contents of these tables is described in the MetaData vignette for the
 package.
+
+metadata_var accesses the QuestionnaireVariables metadata table.
+metadata_cb accesses the VariableCodebook metadata table.
+metadata_tab accesses the QuestionnaireDescriptions table.
 }
 \examples{
 ex1 = metadata_cb(variable = "LBDLDL")

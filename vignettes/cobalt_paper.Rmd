@@ -1,11 +1,11 @@
 ---
 layout: default
-title: "A vignette that outlines a strategy to replicate a published analysis"
+title: "Replicating published analyses"
 author: Laha Ale, Robert Gentleman
 date: "Updated on : `r date()`"
 # output: html_document
 vignette: >
-  %\VignetteIndexEntry{A vignette that outlines a strategy to replicate a published analysis}
+  %\VignetteIndexEntry{Replicating published analyses}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
