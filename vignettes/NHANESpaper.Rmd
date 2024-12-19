@@ -226,8 +226,23 @@ knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
 And last we describe the `QuestionnaireDescriptions` table. It has one row for for each questionnaire or table.  The data include the year that the questionnaire was used, the data group (demographics, laboratory etc), whether there are use constraints on the data, the URLs used to obtain the data and the documentation and the release date. The release date can change if the data are modified by the CDC.
 
 ```{r QuestionnaireDescriptions, echo=FALSE}
-zz = phonto:::metadata_tab()
-knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Descriptions Table",
-   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
+# zz = phonto:::metadata_tab()
+# knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Descriptions Table",
+#    col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
+
 
 ```
+Table: Variables in the Questionnaire Descriptions 
+
+Variable          | Value                    
+---------------   | ------------------------ 
+TableName         | name of tables corresponding with data file
+Description       | Data File Name 
+BeginYear         | Begin year of the cycle  
+EndYear           | End year of the cycle   
+DataGroup         | Data group including 
+UseConstraints    | Whether the data is constrained
+DocFile           | Link of codebook 
+DataFile          | Link of data file (XPT file) 
+DatePublished     | Date of publish data
+
