@@ -34,16 +34,19 @@
 ##' @rdname MetadataTables
 ##' @aliases metadata_cb metadata_tab metadata_var
 ##' @title Metadata Tables : Access Postgres DB
-##' @param variable Character string naming a variable in one or more NHANES tables
-##' @param table Character string naming one NHANES table
+##' @param variable Character vector naming one or more variable
+##' @param table Character vector naming one or more NHANES table
 ##' @return A dataframe or tibble with the appropriate subset of the metadata table.
 ##' @details metadata_var accesses the QuestionnaireVariables metadata table.
 ##' metadata_cb accesses the VariableCodebook metadata table.
 ##' metadata_tab accesses the QuestionnaireDescriptions table.
+##' The returned object has entries for each variable/table combination where there is a match,
+##' in the sense that the table has a variable with the supplied name.
 ##' @examples
 ##' ex1 = metadata_cb(variable = "LBDLDL")
 ##' ex2 = metadata_var(table = "DEMO_D")
 ##' ex3 = metadata_tab(table = "ACQ_J")
+##' ex4 = metadata_var(variable=c("RIDAGEYR",  "RIAGENDR", "BPXSY1"), table=c("DEMO", "DEMO_B", "DEMO_C", "BPX_C"))
 ##' @export
 ##' @author Deepayan Sarkar
 metadata_cb <- function(variable = NULL, table = NULL) {

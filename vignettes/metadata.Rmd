@@ -1,10 +1,11 @@
 ---
 layout: default
-title: "Working With NHANES Metadata"
+title: "Working with NHANES Metadata"
 output: rmarkdown::html_vignette
+ 
 author: Laha Ale, Robert Gentleman, Deepayan Sarkar
 vignette: >
-  %\VignetteIndexEntry{NHANES Metadata}
+  %\VignetteIndexEntry{Working with NHANES Metadata}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -15,16 +16,27 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+library(phonto)
+library(kableExtra)
 ```
+
 
 
 ### Introduction
 
+In this vignette we describe the NHANES metadata and give some examples of how it can be used to ensure that the variables and tables used in an analysis are measuring the same things, are reported in the same units, targeted the same demographics and a host of other challenges that might arise. We assume that the reader is using either a Docker container with a copy of the NHANES database, or that they have a locally available NHANES database.  These tools can be used with the `nhanesA` package but that will likely be slow and cumbersome. Details on the NHANES data etc are described in the `Quick Start` vignette and readers should be familiar with that document.
 
+Within the container there are a few variables that are set and help users identify which version they are working with, and one variable the tells where the HTML documentation.
+In the table below the first two values are in the `VersionInfo` table in the database.
+`NHANES_TABLE_BASE` is an environment variable in the Linux OS being run.
 
- In this vignette we describe the NHANES metadata and give some examples of how it can be used to ensure that the variables and tables used in an analysis are measuring the same things, are reported in the same units, targeted the same demographics and a host of other challenges that might arise.
- We assume that the reader is using either a Docker container with a copy of the NHANES database, or that they have a locally available NHANES database.  These tools can be used with the `nhanesA` package but that will likely be quite slow and cumbersome.
-  Details on the NHANES data etc are described in the `Quick Start` vignette and readers should be familiar with that document.
+Variable          | Value                    
+---------------   | ------------------------ 
+CONTAINER_VERSION | Version number for the Container        
+COLLECTION_DATE   | Date data were downloaded 
+NHANES_TABLE_BASE | Location of HTML documentation, environment variable
+
   
 In this vignette we are interacting directly with the Postgres (or other backends). The first thing to do is to determine which version of the data you are working with. The next code chunk shows how to access that information.  When working directly with the database we use the `phonto` package which has established a connection, `phonto:::cn()`, which you should use.
 
@@ -39,15 +51,63 @@ You can see what date the underlying data were collected on as well as what vers
  
 ## NHANES Metadata
 
-The NHANES metadata is contained in three tables, and at some point in the collection of html documents that the CDC produces for each of the tables.  
-The survey is carried out in two year *cycles* starting from the first cycle in 1999-2000. Within each cycle, a set of people are surveyed, however not all of the participants are surveyed across all of the components. Within each of the data categories NHANES has organized the data into Questionnaires and provides web interfaces for descriptions of the contents of each questionnaire.  We do not replicate the web interface as users can browse that information using standard tools, but we have constructed an integrated SQL database representation of much of the publicly available NHANES data.  Placing all of the data into a single database facilitates searching and extraction of relevant values, and this provides many advantages to the individual researcher, as well as to the research world at large.
+Within the database metadata are stored in their own schema. There are three tables that describe the NHANES data:
 
-Each NHANES participant is assigned a unique ID that is stored in the database as <tt>SEQN</tt>. This is used as the primary key and merging of data extracted from different tables should be based on this variable (<tt>SEQN</tt>). 
+  * `QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
+  * `QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
+  * `VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
+  * `VersionInfo - provides version information and the date the data were downloaded
 
-For each two-year cycle, NHANES provides a set of data, documentation and code books, organized by each of the five publicly available categories mentioned above.  Users can explore the available data at a high level by searching within cycle, category, and measure. One example is the [Body Measures](https://wwwn.cdc.gov/nchs/nhanes/2001-2002/BMX_B.htm) table which provides data from the 2001-2002 examination data. The web page provides details on the measurements and how they are recorded.
-A screen shot of that page is given below.  These pages typically have a brief description, that outlines how the data were collected and gives suggestions on how they should be analyzed and interpreted. Limitations and changes from previous years are also given.  Analysts are strongly encouraged to read these prior to do any work.  On the right side there is a list of the variables that were collected. They are in the form of a short all-capitals label (typically the *SAS Label*) followed by a more descriptive title.
+### The Metadata Schema
 
-![The BMX_B Documentation](images/bmxb.png){width=90%}
+`QuestionnaireVariables`
+
+This table has one row for each NHANES table/variable combination.  This table captures the information in the variables descriptions, similar to that in Figure S1. Additional information informs on the table name (DEMO_J for the table in Figure S1),  whether there are use constraints.  The IsPhenotype column is one we curate and it indicates whether the variable is a phenotype and could be used as a covariate or a response.  Variables such as individual identifier, SEQN, or the survey weights should not be used as variables in regression models, for example.
+
+
+```{r QuestionnaireVariables, echo=TRUE}
+zz = phonto:::metadata_var()
+knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Variables Table",
+   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
+
+```
+
+
+The `VariableCodeBook` table has one row for each possible value for a variable. So,
+for each table, and within that for each variable, there are multiple rows describing the values that variable can have. The column lables of the `VariableCodeBook` table are below.
+
+```{r variablecodebook, echo=TRUE}
+zz = phonto:::metadata_cb()
+knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
+   col.names="Variables") |>
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+And last we describe the `QuestionnaireDescriptions` table. It has one row for for each questionnaire or table.  The data include the year that the questionnaire was used, the data group (demographics, laboratory etc), whether there are use constraints on the data, the URLs used to obtain the data and the documentation and the release date. The release date can change if the data are modified by the CDC.
+
+```{r QuestionnaireDescriptions, echo=TRUE}
+zz = phonto:::metadata_tab()
+knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Descriptions Table",
+   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
+
+```
+
+
+### HTML Data
+
+The HTML manual pages provided by the CDC are all downloaded as part of our ETL process. They are placed on the file system of the Docker container with the same directory structure as the CDC uses.  This allows us to browse those files, using the same accessor functions in the `nhanesA` package by just changing the root of the file system.  As noted above we use an environment variable, `NHANES_TABLE_BASE`, to detect the presence of this local cache and then use it for browsing.  This ensures that the HTML being viewed is consistent with the data that is in the container.  As the CDC updates files, there will be discrepancies between the on-line HTML files and the data in the container.
+
+Using the `browseNHANES` function within the container will access the local files whenever a file name is specified with the `nh_table` argument.  In the future we plan to enable natural language processing (NLP) on these files to enable augmentation of analysis work with new developments in AI.
+
+### Example
+
+We next provide some examples of the HTML pages and describe how the information reported in them is transformed into the metadata tables in the database.
+
+![**Figure 1:** Body Measures Table for Cycle B (2001-2002)](images/bmxb.png){width=90%}
+
+The BMX_B questionnaire provides data from the 2001-2002 cycle and is shown in Figure 1. The web page provides details on the measurements and how they are recorded.  These pages typically have a brief description, that outlines how the data were collected and gives suggestions on how they should be analyzed and interpreted. Limitations and changes from previous years are often provided.  Analysts are strongly encouraged to read these prior to doing any analyses.  On the right side there is a list of the variables that were collected. They are in the form of a short all-capitals label (typically the *SAS Label*) followed by a more descriptive title.
+
 
 Below are examples of two of the variables, the first SEQN, is the sequence number, which provides a unique identifier for each individual within a cycle.  SEQN can be used to join data across tables within cycles. SEQN are not reused and there are no examples of individuals participating in more than one cycle.
 
@@ -55,53 +115,6 @@ Below are examples of two of the variables, the first SEQN, is the sequence numb
 
 ![weight](images/weight.png){width=80%}
 
-In order to facilitate easy access to the documentation we have replicated all HTML files in the Docker container. The files are organized by cycle and the top level directory is stored as the environment variable `NHANES_TABLE_BASE`.  Using the `browseNHANES` function within the container will access the local files whenever a file name is specified with the `nh_table` argument.  In the future we plan to enable natural language processing (NLP) on these files to enable augmentation of analysis work with new developments in AI.
-
-### Metadata Tables
-
-Within the NHANES database we have constructed 2 metadata tables to provide easy access to the details that are reported in the HTML pages described above.  There is an additional metadata table that describes where each table was downloaded from, what cycle it belongs to, the year and data group as well as when the data were published.  NHANES regularly provides updates which will have the same name as the original table but a new publication date.
-
-
- **QuestionnaireDescriptions**
- 
- One row for each table. Describes each table with contents, what year it was collected, what type of data, URLs for the data and documentation files, the date the table data were published:
- 
- - TableName
- - Description
- - BeginYear
- - EndYear
- - DataGroup
- - UseConstraints
- - DocFile
- - DataFile
- - DatePublished
-
-**QuestionnaireVariables**
-
- One row for each variable within tables.  Provides a summary of the header information for that variable.
- The label used for it, the instructions that were given to the respondent, whether something is a phenotype (as distinct from say survey weights or other variables that are not themselves intended to be analyzed). UseConstraints seem redundant here - I assume that they are regulated at the table level, not the variable level.
- 
- - Variable
- - TableName
- - SasLabel
- - Description
- - EnglishInstructions
- - Target
- - UseConstraints
- - IsPhenotype
- - OntologyMapped
-
-**VariableCodebook**
-
-One row for each variable within tables. Provides the detailed information on what values were obtained, the meanings for any non-numeric values, and in some cases how to interpret special numeric values (say 0 for missing or negative values to indicate some characteristic of the respondent).
-
- - Variable
- - TableName
- - CodeOrValue
- - ValueDescription
- - Count
- - Cumulative
- - SkipToItem
 
 
 ```{r describeTables}
@@ -117,12 +130,13 @@ demoVars = c("RIDRETH1", "RIDAGEYR",  "RIAGENDR", "DMDEDUC2")
 bpqVars = c("BPQ020", "BPQ050")
 ```
 
+There are accessor functions to obtain the metadata tables as R dataframes and these can subsequently be filtered, using `dplyr` or other tools to find the information.
 ```{r querymetadata}
-QuestionnaireDescriptions <- dplyr::tbl(phonto:::cn(), I(nhanesA:::MetadataTable("QuestionnaireDescriptions")))
+QuestionnaireDescriptions <- metadata_tab()
 
-QuestionnaireVariables <- dplyr::tbl(phonto:::cn(), I(nhanesA:::MetadataTable("QuestionnaireVariables")))
+QuestionnaireVariables <- metadata_var()
 
-VariableCodeBook <- dplyr::tbl(phonto:::cn(), I(nhanesA:::MetadataTable("VariableCodebook")))
+VariableCodeBook <- metadata_cb()
 
 demoAtarget = dplyr::filter(QuestionnaireVariables, (TableName %in% demo_tables) & (Variable=="RIDAGEYR") )
 dAt = dplyr::collect(demoAtarget)

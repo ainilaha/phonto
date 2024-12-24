@@ -32,23 +32,27 @@ options(tinytex.verbose = TRUE)
 
 # Introduction
 
-Accessible large complex survey data such as that available from the National Health and Nutrition Examination Survey (NHANES) @cdc2023, the UK Biobank @Sudlow2015, or SEER (<https://seer.cancer.gov/>) has had a transformational effect on many aspects of epidemiology and real world data analysis. NHANES is a widely used resource referenced by thousands of papers every year and over 700 GitHub repositories mention NHANES (based on <https://github.com/topics>). Complex datasets such as NHANES often consist of multiple data files with disjoint metadata and documentation resources. Interacting with these and performing analyses typically involves substantial amounts of preprocessing. This can be time consuming and is, in general, error-prone. Use cases often span multiple outcomes (responses) based on complex modeling of tens to thousands of features. In some cases, data are collected over time, or using different methods (e.g. surveys and imaging) so some amount of integration and alignment is needed. Including exposure data based on geography or season will increase the complexity. As a result, the analyses are not easily replicated or extended.
+Accessible large complex survey data such as that available from the National Health and Nutrition Examination Survey (NHANES) @cdc2023, the UK Biobank @Sudlow2015, or SEER (<https://seer.cancer.gov/>) has had a transformational effect on many aspects of epidemiology and real world data analysis. NHANES is a widely used resource referenced by thousands of papers every year and over 700 GitHub repositories mention NHANES (based on <https://github.com/topics>). Complex datasets such as NHANES often consist of multiple data files with disjoint metadata and documentation resources. Interacting with these and performing analyses typically involves substantial amounts of preprocessing. This can be time consuming and is, in general, error-prone. Use cases often span multiple outcomes (responses) based on complex modeling of tens to thousands of features. In some cases, data are collected over time, or using different methods (e.g. surveys and imaging) so some amount of integration and alignment is needed. Including exposure data based on geography or season will increase the complexity. As a result, the analyses are not easily replicated or extended. 
 
-We focus on the NHANES data and describe a system that is based on 1) Docker (www.docker.com), which allows for the detailed specification of the computational tools and resources 2) a relational database, Postgres (https://www.postgresql.org/), that supports SQL and 3) statistical software, R (www.r-project.org) and RStudio (https://posit.co/) which provide tools to support analysis and reproducibility. By releasing a single component, the Docker container, that has appropriate version numbers and can be run on virtually any hardware we simplify access and enable sharing.
+We described the current ecosystem and many of the existing packages in @ale2024 and we have based much of this work on the `nhanesA` R package.
+We we describe our efforts to build a system that is based on 1) Docker (www.docker.com), which allows for the detailed specification of the computational tools and resources 2) a relational database, Postgres (https://www.postgresql.org/), that supports SQL and 3) statistical software, R (www.r-project.org) and RStudio (https://posit.co/) which provide tools to support analysis and reproducibility. By releasing a single component, the Docker container, that has appropriate version numbers and can be run on virtually any hardware we simplify access and enable sharing.
 
-The R ecosystem has a long history of fostering reproducibility in scientific computing @RepRes and the production of dynamic documents that can be training material, e.g. package vignettes, but have been extended to support authoring of books @xie2024 and scientific papers where the actual code to create figures and tables is explicitly provided. More recently Dononho @donoho2024 and others have touched on the importance of friction less reproducibility. The system we are proposing would directly support these activities.  And, even more importantly the approach lends itself to a more general concept of low friction extensibility, where a paper and its results can not only be replicated, but they can be extended and enhanced with relative ease. While science relies on reproducibility it progresses through extension and adoption of new methods and paradigms.
+The R ecosystem has a long history of fostering reproducibility in scientific computing @RepRes and the production of dynamic documents that can be training material, e.g. package vignettes, but have been extended to support authoring of books @xie2024 and scientific papers where the actual code to create figures and tables is explicitly provided. More recently Dononho @donoho2024 and others have touched on the importance of frictionless reproducibility. The system we are proposing would directly support these activities.  And, even more importantly the approach lends itself to a more general concept of low friction extensibility, where a paper and its results can not only be replicated, but they can be extended and enhanced with relative ease. While science relies on reproducibility it progresses through extension and adoption of new methods and paradigms.
 
 # Methods
 
-We describe the tools and methods that we used with explicit references to the NHANES data. This will provide some clarity and readers who may want to implement a similar strategy for different data sources should be able to adjust the process as necessary.
+We describe the tools and methods that we used with explicit references to the NHANES data. This will provide clarity and readers who want to implement a similar strategy for different data sources should be able to adjust the process as necessary. We create open-source software packages in GitHub and R so that others can access them and ideally provide us with feedback and bug reports.
+
+
+Key design goals include: 1) engineering the system so that any relational database can be used 2) allowing software packages such as `nhanesA` to be engineered so they function in the same way whether or not they are running in the container; 3)  create a system that supports extensibility via inclusion of additional data sources or additional analytic tools 4) support a use case that allows for multiple users to access the database directly via IP connections without logging in to the container.
 
 ## Creating the Database
 
 The Continuous NHANES is an ongoing survey conducted by the Centers for Disease Control and Prevention (CDC), the national public health agency of the United States. The CDC makes data from the survey available online on its website. Starting from 1999-2000, data was collected in two-year cycles, and made available in the form of a large number of datasets or “tables” for each cycle, until data collection for the 2019-20 cycle was interrupted by the COVID pandemic. The raw data for each table is available as an XPT file in the SAS Transport Format @sas2021xport, along with a corresponding webpage providing detailed documentation about the table. This webpage usually contains a codebook with entries for each variable in the table, as well as general background information on the data collected, often including pointers and suggestions on how to interpret and analyze the data. The codebook consists of a listing of all survey questions in a format that describes the actual data collected. These codebooks detail what data were collected, how it was coded and the target, which can limit who is asked to answer. This information is used to translate the raw data into a form suitable for analysis.
 
-Most NHANES data are publicly available and the terms of use are available on the NHANES website. Some data require special permission to access and have *use constraints*. Our database contains only the publicly available data. However documentation is available for all data and so users can search the documentation for restricted access data, but they will have to apply to the CDC for access.
+Most NHANES data are publicly available and the terms of use are available on the NHANES website. Some data require special permission to access and are *restricted access*. Our database contains only the publicly available data. However documentation is available for all data and users can search the documentation of restricted access data, but they will have to apply to the CDC to obtain the data.
 
-Specifically, we use manifests from the CDC to identify data and documentation files for downloading. These data are optionally downloaded and preprocessed on a local machine, and saved as a date-stamped snapshot in a GitHub repository (https://github.com/deepayan/nhanes-snapshot). We use functionality provided by the BiocFileCache package to manage the downloading and updating of the actual files, avoiding multiple downloads of the same file. This is achieved via wrapper functions in the `cachehttp` package (https://github.com/ccb-hms/cachehttp). Finally these files are processed via a set of R scripts (https://github.com/deepayan/nhanes-postgres) and / or  Python scripts (https://github.com/ccb-hms/NHANES and https://github.com/rsgoncalves/nhanes-metadata) to create SQL databases, tables, and metadata. This process is largely agnostic to the specific SQL variant used.
+We use manifests from the CDC to identify data and documentation files for downloading. These data are downloaded and preprocessed on a local machine, and saved as a date-stamped snapshot in a GitHub repository (https://github.com/deepayan/nhanes-snapshot). We use functionality provided by the `BiocFileCache` package @shepherd2024 to manage the downloading and updating of the actual files, avoiding multiple downloads of the same file. This is achieved via wrapper functions in the `cachehttp` package (https://github.com/ccb-hms/cachehttp). Finally these files are processed via a set of R scripts (https://github.com/deepayan/nhanes-postgres) and / or  Python scripts (https://github.com/ccb-hms/NHANES and https://github.com/rsgoncalves/nhanes-metadata) to create SQL databases, tables, and metadata. This process is largely agnostic to the specific SQL variant used.
 
 To enable users not well-versed in SQL, we also enhance the `nhanesA` package @ale2024 to use the database as an alternative source for NHANES data in a manner that is completely transparent to the end-user. We do this by using the DBI R package as an abstraction layer that can speak to multiple database variants. Individual NHANES data files are mapped to individual tables in the database, and accessing them is thus straightforward. The metadata search functionality, which is more complicated, is implemented via the `dbplyr` package @wickham2023 which implements a dplyr grammar for DBI-compliant databases.
 
@@ -56,7 +60,6 @@ Within the database we create three schemas: **Metadata** tables that contain in
 
 A few public data files are excluded from the database primarily due to their size and the specialized data they contain. Some oral microbiome testing data (collected in two cycles) are omitted because they are in non-standard formats. Four datasets containing imputed Dual Energy X-ray absorptiometry data are omitted as their documentation is in non-standard format. In addition, some files are excluded because they are unusually large; most of these are records of physical activity monitors given to participants of the survey. These datasets can be downloaded from the CDC website and easily integrated into any workflow.
 
-We create open-source software packages in GitHub so that others can access them and ideally provide us with feedback and bug reports. A complete list of the GitHub repositories and their capabilities is given in Supplement Table 1.
 
 ## Docker
 
@@ -64,29 +67,24 @@ Docker is a technology that enables the creation of virtual machines that can ru
 
 The specific details describing how we constructed the container are given in the GitHub repository <https://github.com/deepayan/nhanes-postgres>. Succinctly, we created a Docker image derived from [rocker/tidyverse](https://hub.docker.com/r/rocker/tidyverse/), which is an Ubuntu GNU/Linux image containing R and RStudio Server, and added a PostgreSQL database containing data from NHANES.
 
-We create and update a set of environment variables, Table 1, that can be tested for so that software can determine whether it is running in this container and hence can use the corresponding tools and database. Version numbers on the container and information on the date the data were downloaded help provide the resources needed to assess reproducibility and accuracy of results. 
+Within the Linux enviroment we set environment variables, `NHANES_TABLE_BASE` which provides the location of the HTML documentation inside the container and
+`EPICONDUCTOR_CONTAINER_DB` which is a text string describing the database being used. 
+Optionally the environment variable `EPICONDUCTOR_CONTAINER_VERSION` can be set, but it should be the same as the value of `CONTAINER_VERSION` in the database (described below).
 
-We have tried to engineer the system so that any relational database can be used. Another goal of this effort is to allow software packages such as `nhanesA` to be engineered so they function in the same way whether they are used in the container or not. This strategy enables the creation of documents and tools that can function whether or not the container is being used. Since the data are stored in a standard Postgres database users can access the data either directly using SQL from system that they prefer simply by accessing the database directly via the Docker container.
+We also create a `Metadata` table, `VersionInfo` that contains variables describing the data and container for users that are either local, or that are using the database system, but not from processes running inside the container.
 
 
 Variable          | Value                    
 ---------------   | ------------------------ 
 CONTAINER_VERSION | Version number for the Container        
 COLLECTION_DATE   | Date data were downloaded 
-NHANES_TABLE_BASE | Location of HTML documentation, environment variable
 
 
-## The phonto package
+## Additional Software
 
-We created an R package named phonto @phonto that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (`jointQuery`).
+One subtantial advantage to the system we have built is that users have very rapid access to all the NHANES data at once.  This greatly affects the kinds of analyses that are possible.  In order to take advantage of this we have created an R package, `phonto` that contains a number of R functions to perform different database queries and to perform quality assessment (QA) when merging data across cycles and questionnaires.
 
-There are functions to help identify variables that are not phenotypes, such as `SEQN` which is a unique identifier for each participant, and hence should not be used in any analyses.
-
-## The data and the database
-
-We create a cache of all publicly available data files and all HTML documentation files.  This cache is routinely updated using a strategy that only downloads files that have changed. We then use routines in the nhanesA package to create our extract, transform, load (ETL) process. This creates tables in the database that correspond to the raw (as supplied) and translated (categorical variables are translated from integer values to the appropriate strings) as well as three metadata tables.
-
-We downloaded NHANES data from the CDC website then processed and loaded the data into a PostgreSQL database hosted within a Docker container. We added R functionality to facilitate data manipulation and analysis. These tools not only enhance the efficiency of researchers' work but also make it easier to share their results and improve reproducibility in their analyses.
+We created an R package named phonto @phonto that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (i.e. `jointQuery`).
 
 ![An overview of the ecosystem provided. Panel a) shows the extract transform load (ETL) process. Panel b) Shows examples of tools provide (top) and tools that could easily be used.  Panel c) Notes how these user communities can create reproducible outputs.](images/nhanes1.png){#fig:nhanes1}
 
@@ -94,14 +92,6 @@ Figure \ref{fig:nhanes1} illustrates the workflow of our system:
 a) ETL Process: The data extraction, transformation, and loading (ETL) process begins with crawling data from the CDC website and transforming it into a structured format suitable for analysis, which is then loaded into a PostgreSQL database within the Docker environment.
 b) User Community: The system is designed to be versatile, supporting a wide range of programming languages and statistical tools, including built-in RStudio with custom R packages (nhanesA, PHONTO) to streamline the analysis process.
 c) Reproducible Outputs: The system facilitates the creation of reproducible outputs such as notebooks, R Markdown files, and GitHub repositories, enabling researchers to share their work and collaborate more effectively.
-
-A primary advantage of having all data in a relational database is that one can make comparisons both across tables within a cycle or across cycles. These allow the analyst to identify potential problems and inconsistencies in the data.
-
-### Using the Database
-
-The NHANES data were collected using a complex, four-stage sample design, and appropriate analyses of the data typically involve using specialized survey analysis procedures that use weights to account for the sampling scheme. Briefly, each sampled person is assigned a weight reflecting the number of people in the broader population that the individual represents. We recommend using the survey package to perform these analyses. We provide examples of using the weights with the `nhanesA` and `phonto` packages and the CDC provides detailed documentation as well.  
-
-One of the advantages of having the data in one database is that it can easily be queried to perform across cycle analyses. In Figure \@ref(fig:demoplot) we summarize the number of participants by recorded ethnicity and gender by cycle.
 
 ```{r getalldemo, error = TRUE, results='hide', echo=FALSE}
 ##Code from docker-examples.rmd by Deepayan
@@ -181,7 +171,10 @@ The database design based on work done at Harvard Medical school with the Center
 
 # Supplementary Material
 
-The following are useful pages from the CDC NHANES websits
+
+## Manifests
+
+The following URLs reference CDC manifests for the data, the limited access data and a comprehensive list of variables.  They can be accessed using the `nhanesManifest` function in the `nhanesA` package.
 
   * https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx
   * https://wwwn.cdc.gov/Nchs/Nhanes/search/DataPage.aspx?Component=LimitedAccess
@@ -197,7 +190,7 @@ Within the database metadata are stored in their own schema. There are three tab
   * `QuestionnaireDescriptions` - one row per table, all information about the table, use constraints, download errors
   * `QuestionnaireVariables` - one row per variable gives the data from the HTML documentation, translation errors go here, excluded tables go here 
   * `VariableCodebook` - one row for each possible value for each variable; describes the coded values for all categorical variables.
-  * `VersionInfo - provides version information and the date the data were downloaded
+  * `VersionInfo` - provides version information and the date the data were downloaded
 
 
 `QuestionnaireVariables`
@@ -234,15 +227,15 @@ And last we describe the `QuestionnaireDescriptions` table. It has one row for f
 ```
 Table: Variables in the Questionnaire Descriptions 
 
-Variable          | Value                    
+Variable          | Description                   
 ---------------   | ------------------------ 
-TableName         | name of tables corresponding with data file
+TableName         | Name of table corresponding to the data file
 Description       | Data File Name 
 BeginYear         | Begin year of the cycle  
 EndYear           | End year of the cycle   
-DataGroup         | Data group including 
-UseConstraints    | Whether the data is constrained
-DocFile           | Link of codebook 
-DataFile          | Link of data file (XPT file) 
-DatePublished     | Date of publish data
+DataGroup         | Data group 
+UseConstraints    | Whether the data is restricted
+DocFile           | URL for the codebook/documentation 
+DataFile          | URL for the data file (XPT file) 
+DatePublished     | Date the data were published
 
