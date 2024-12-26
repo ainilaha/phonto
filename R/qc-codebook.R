@@ -36,6 +36,7 @@
 ##' @title Metadata Tables : Access Postgres DB
 ##' @param variable Character vector naming one or more variable
 ##' @param table Character vector naming one or more NHANES table
+##' @param UseConstraints If FALSE then only tables with no use constraints are returned.
 ##' @return A dataframe or tibble with the appropriate subset of the metadata table.
 ##' @details metadata_var accesses the QuestionnaireVariables metadata table.
 ##' metadata_cb accesses the VariableCodebook metadata table.
@@ -59,8 +60,10 @@ metadata_var <- function(variable = NULL, table = NULL) {
 }
 ##' @rdname MetadataTables
 ##' @export
-metadata_tab <- function(table = NULL) {
-    .create_query("QuestionnaireDescriptions", NULL, table) |> dplyr::collect() |> as.data.frame()
+metadata_tab <- function(table = NULL, UseConstraints = FALSE) {
+    ans = .create_query("QuestionnaireDescriptions", NULL, table) |> dplyr::collect()
+    if (!UseConstraints) ans = ans |> dplyr::filter(UseConstraints == "None")
+    return (as.data.frame(ans))
 }
 
 ## The specific types of discrepancies we look for are:
@@ -147,6 +150,7 @@ qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 ##' @param var Optional data frame containing variable metadata
 ##' @param cb Optional data frame containing codebook metadata
 ##' @param tab Optional data frame containing table metadata
+##' @param UseConstraints If FALSE, the default, then only publicly available tables are searched.
 ##' @return An object of S3 class \code{"qc_var"} with suitable print and summary methods.
 ##' @export
 ##' @details
@@ -157,12 +161,20 @@ qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 ##' ## restrict the tables
 ##' t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
 ##' @author Deepayan Sarkar
-qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab())
+qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab(), UseConstraints = FALSE)
 {
-    if(!missing(tables) ) {
-      cb = metadata_cb(x, tables)
-      var = metadata_var(x, tables)
+    if( !UseConstraints)
+      tab = metadata_tab(UseConstraints=UseConstraints)
+    availableTables = tab$TableName
+    if(!missing(tables)) {
+        missingTabs = setdiff(tables, availableTables)
+        availableTables = intersect(tables, availableTables)
+        if(length(missingTabs > 0 )) warning(paste("Specified tables:", missingTabs,
+                                                   "are not public or don't exist"))
+        cb = metadata_cb(x, availableTables)
+        var = metadata_var(x, availableTables)
     }
+
     res <- c(qc_var_multtable(x, var, cb, tab),
              qc_var_description(x, var, cb, tab),
              qc_var_saslabel(x, var, cb, tab),
