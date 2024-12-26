@@ -198,23 +198,47 @@ Within the database metadata are stored in their own schema. There are three tab
 This table has one row for each NHANES table/variable combination.  This table captures the information in the variables descriptions, similar to that in Figure S1. Additional information informs on the table name (DEMO_J for the table in Figure S1),  whether there are use constraints.  The IsPhenotype column is one we curate and it indicates whether the variable is a phenotype and could be used as a covariate or a response.  Variables such as individual identifier, SEQN, or the survey weights should not be used as variables in regression models, for example.
 
 ```{r QuestionnaireVariables, echo=FALSE}
-zz = phonto:::metadata_var()
-knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Variables Table",
-   col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
+# zz = phonto:::metadata_var()
+# knitr::kable(colnames((zz)), caption="Variables in the Questionnaire Variables Table",
+#    col.names="Variables") |> kable_styling(latex_options = "HOLD_position")
 
 ```
+Table: Variables in the Questionnaire Variables
+
+Variable            | Description                   
+--------------------| ------------------------ 
+Variable            | Variable names
+TableName           | Name of table corresponding to the data file
+SasLabel            | Descriptive label used in SAS to identify the variable
+EnglishInstructions | Number of survey 
+HardEdits           | ....
+Target              | Survey target
+
 
 
 The `VariableCodeBook` table has one row for each possible value for a variable. So,
 for each table, and within that for each variable, there are multiple rows describing the values that variable can have. The column lables of the `VariableCodeBook` table are below.
 
 ```{r variablecodebook, echo=FALSE}
-zz = phonto:::metadata_cb()
-knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
-   col.names="Variables") |>
-  kable_styling(latex_options = "HOLD_position")
+# zz = phonto:::metadata_cb()
+# knitr::kable(colnames((zz)), caption="Variables in the Variable Codebook Table",
+#    col.names="Variables") |>
+#   kable_styling(latex_options = "HOLD_position")
 
 ```
+Table: Variables in the Variable Codebook
+
+Variable          | Description                   
+---------------   | ------------------------ 
+Variable          | Variable names
+TableName         | Name of table corresponding to the data file
+CodeOrValue       | Represents categorical values as integers or numeric variables as value ranges
+ValueDescription  | Description of the values
+Count             | Number of survey participants or records
+Cumulative        | Cumulative of survey
+SkipToItem        | Skipped participants that response to the current item
+
+
 
 And last we describe the `QuestionnaireDescriptions` table. It has one row for for each questionnaire or table.  The data include the year that the questionnaire was used, the data group (demographics, laboratory etc), whether there are use constraints on the data, the URLs used to obtain the data and the documentation and the release date. The release date can change if the data are modified by the CDC.
 
