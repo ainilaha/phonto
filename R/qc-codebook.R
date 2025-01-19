@@ -160,6 +160,9 @@ qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 ##' t1 = qc_var("DMDEDUC3")
 ##' ## restrict the tables
 ##' t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
+##' print(t2, show = "saslabel")
+##' qc_var("LBCBHC")
+##' qc_var("LBXHCT")
 ##' @author Deepayan Sarkar
 qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab(), UseConstraints = FALSE)
 {
@@ -201,12 +204,21 @@ summary.qc_var <- function(object, ...)
 
 
 #' @rdname qc_var
+#' @param x An object of class \code{"qv_var"}
+#' @param show A vector giving the types of identified anomalies to
+#'     print. Currently four types of anomalies are identified:
+#'     presence of the variable in multiple tables in the same cycle;
+#'     mismatches in the Description field, mismatches in SAS Label,
+#'     and mismatch in the Target specification. Some of these
+#'     mimatches are benign, so it is useful to suppress them when
+#'     printing.
 #' @export
-print.qc_var <- function(x, ...)
+print.qc_var <- function(x, ...,
+                         show = c("multiple", "description", "saslabel", "target"))
 {
     ok <- TRUE
     cat("Variable: ", attr(x, "variable"))
-    if (!is.null(x$multiple_tables))
+    if (!is.null(x$multiple_tables) && "multiple" %in% show)
     {
         ok <- FALSE
         cat("\nAppears in multiple tables within same cycle:\n")
@@ -215,19 +227,19 @@ print.qc_var <- function(x, ...)
         tapply(x$multiple_tables, ~ cycle, function(d) paste(d$TableName, collapse = " / ")) |>
             array2DF(responseName = "Tables") |> print()
     }
-    if (!is.null(x$description_mismatch))
+    if (!is.null(x$description_mismatch) && "description" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Description:\n")
         print(array2DF(x$description_mismatch, responseName = "Frequency"))
     }
-    if (!is.null(x$saslabel_mismatch))
+    if (!is.null(x$saslabel_mismatch) && "saslabel" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Saslabel:\n")
         print(array2DF(x$saslabel_mismatch, responseName = "Frequency"))
     }
-    if (!is.null(x$target_mismatch))
+    if (!is.null(x$target_mismatch) && "target" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Target:\n")
