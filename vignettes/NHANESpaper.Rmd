@@ -28,11 +28,13 @@ options(tinytex.verbose = TRUE)
 ```
 
 
-```{r setup, results='hide', echo=FALSE}
-library(phonto)
-##Code from docker-examples.rmd by Deepayan
-library(nhanesA)
+```{r setup, results='hide', echo=FALSE, message = FALSE}
 library(kableExtra)
+library(dplyr)
+library(survey)
+library(nhanesA)
+library(phonto)
+stopifnot(isTRUE(nhanesOptions("use.db")))
 demo_all <- nhanesSearchTableNames("DEMO")
 all_demo_data <- sapply(demo_all, nhanes, simplify = FALSE)
 object.size(all_demo_data) # ~45 MB
@@ -97,15 +99,15 @@ xx = metadata_var("SMQ661")
 backtick <- "`"
 ```
 
-When analyzing data across cycles, there can be substantial issues. In Figure \ref{fig:smoking} we show the documentation for one variable, `SMQ661`.  This variable appears in `r nrow(xx)` cycles: `r paste(sprintf("%s%s%s", backtick, xx$TableName, backtick), sep=", ")`. When using this variable across cycles it is important to check for consistency in its definition and use across cycles, but doing so manually is time consuming.
+When analyzing data across cycles, there can be substantial issues. In Figure \ref{fig:smoking} we show the documentation for one variable, `SMQ661`.  This variable appears in `r nrow(xx)` cycles: in the tables `r paste(sprintf("%s%s%s", backtick, xx$TableName, backtick), sep=", ")`. When using this variable across cycles it is important to check for consistency in its definition and use across cycles, but doing so manually is time consuming.
 
 We have created an R package called `phonto` [@phonto] that contains a number of R functions to perform various useful tasks taking advantage of the fast database access that would otherwise be too slow to be useful. This includes functions for different database queries as well as for quality assessment (QA) when merging data across cycles and questionnaires. As an example, the function `qc_var()` tests for consistency of a single variable across _all_ tables in NHANES by default. Currently we test for consistency of the SAS Label, the Target (who will be asked the questions), the description (English Text) and whether or not the variable is included in more than one table within a cycle.
 
-A seemingly innocuous example of such an inconsistency involves the `DMDEDUC3` variable, which records education level of children and youth, in the demography tables. The output of a call to the `qc_var()` function for this variable below shows that the SAS label has changed over cycles, albeit in a unimportant way (`Education level` versus `Education Level`). 
+A seemingly innocuous example of such an inconsistency involves the `DMDEDUC3` variable, which records education level of children and youth, in the demography tables. The output of a call to the `qc_var()` function for this variable below shows that the SAS label has changed over cycles, albeit in an unimportant way (`Education level` versus `Education Level`). 
 ```{r qcvar, echo=TRUE}
 print(qc_var("DMDEDUC3"), show = "saslabel")
 ```
-Deeper inspection reveals that other typographic changes were made, and at least one of those (see Table \@ref(tab:dmdeduc)) would affect any analysis that involved this variable unless the analyst explicitly ignored case.
+Deeper inspection reveals that other typographic changes were made, and at least one of those (see Table \@ref(tab:dmdeduc)) would affect any analysis that involved this variable unless the analyst explicitly ignored case. Analysts will want to know when and where these differences occur before combining data across cycles. By systematically going through all variables in NHANES, we have identified more serious examples where a variable has changed units of measurement across cycles (`LBCBHC`), and a variable name that has been used to represent two entirely different measurements in some cycles (`LBXHCT`). Thankfully, such examples are rare. 
 ```{r changes, eval=TRUE, echo=FALSE}
 mm = metadata_cb(variable = "DMDEDUC3")
 mm2 = dplyr::filter(mm, TableName %in% demo_all)
@@ -113,50 +115,80 @@ kable(xtabs( ~ TableName + ValueDescription, mm2)[,1:4],
       caption = "Typographic differences across cycles",
       label = "dmdeduc")
 ```
-Many other challenges can occur, such as a change in units across cycles, or the set of possible responses, just to name a few of the issues. Analysts will want to know when and where these differences occur before combining data across cycles.
-
-TODO: Give BMI confidence interval plot instead of population counts?
-
-TODO: As a simple but interesting illustration of the type of analysis enabled by this system, Figure TODO plots confidence intervals for the average BMI among 40-59 [?] year olds in four major population subgroups across NHANES cycles. The confidence intervals, computed separately for each cycle taking into account sampling weights and the two-stage design of the NHANES survey, are nontrivial but not novel in themselves. What is remarkable is that the entire analysis involving 22 separate NHANES tables across 11 cycles takes around FIXME 10 seconds to run.
+<!-- Many other challenges can occur, such as a change in units across cycles, or the set of possible responses, just to name a few of the issues. Analysts will want to know when and where these differences occur before combining data across cycles. -->
 
 <!-- We created an R package named phonto @phonto that contains some specialized code for both processing the data during our ETL process as well as code for supporting merging tables across cycles (i.e. `jointQuery`). -->
 
 
-```{r getalldemo, eval=FALSE, error = TRUE, results='hide', echo=FALSE}
-##Code from docker-examples.rmd by Deepayan
-library(nhanesA)
-library(kableExtra)
-demo_all <- nhanesSearchTableNames("DEMO")
-
-all_demo_data <- sapply(demo_all, nhanes, simplify = FALSE)
-object.size(all_demo_data) # ~45 MB
-sapply(all_demo_data, dim)
+```{r bmisetup, echo=FALSE, results='hide', warnings=FALSE}
+start_time <- proc.time()
+options(survey.lonely.psu = "adjust")
+unrowname <- function(d) { rownames(d) <- NULL; d }
+## Combine a DEMO table with one or more other tables
+shortCycle <- function(SDDSRVYR)
+{
+    cycle <- substring(SDDSRVYR, 8, 16)
+    cycle[grepl("August", cycle)] <- "2021-2023"
+    cycle
+}
+combineTables <- function(demo, ..., by = "SEQN")
+{
+    ddemo <-
+        nhanes(demo, translated = TRUE) |>
+            within(cycle <- shortCycle(SDDSRVYR))
+    for (x in c(...)) {
+        ddemo <- left_join(ddemo,
+                           nhanes(x, translated = TRUE),
+                           by = by)
+    }
+    ddemo
+}
+estMean <- function(design, what, groups, ...)
+{
+    svyby(what, groups, design = design, svymean, ...) |> unrowname()
+}
+## combine and subset design for our specific problem
+## BMI measurement is available as the `BMXBMI` variable in the `BMX`
+## tables. We need to combine these with `DEMO` tables. We want to
+## restrict to a specific age group.
+makeDesign <- function(...)
+{
+    str(c(...))
+    data <- combineTables(...)
+##    if (anyNA(data$WTMEC2YR)) warning("dropping rows with missing exam weights (WTMEC2YR)")
+    data <- subset(data, is.finite(WTMEC2YR))
+    design <- svydesign(id = ~ SDMVPSU, strata = ~ SDMVSTRA, weights = ~ WTMEC2YR,
+                        data = data,
+                        nest = TRUE)
+    subset(design, is.finite(BMXBMI) &
+                   RIDAGEYR >= 40 & RIDAGEYR <= 59 &
+                   RIDRETH1 %in% c("Non-Hispanic Black", "Non-Hispanic White"))
+}
+bmx_tables <- c("BMX", "BMX_B", "BMX_C", "BMX_D", "BMX_E", "BMX_F", "BMX_G", "BMX_H", "BMX_I", "BMX_J", "BMX_L")
+demo_tables <- c("DEMO", "DEMO_B", "DEMO_C", "DEMO_D", "DEMO_E", "DEMO_F", "DEMO_G", "DEMO_H", "DEMO_I", "DEMO_J", "DEMO_L")
+all_designs <- mapply(makeDesign, demo_tables, bmx_tables, SIMPLIFY = FALSE)
+CI <- 
+    lapply(all_designs, 
+           estMean,
+           ~ BMXBMI,
+           ~ cycle + RIDRETH1 + RIAGENDR,
+           vartype = "ci") |> do.call(what = rbind) |> unrowname()
 ```
 
-```{r combinedemo, echo=FALSE, results='hide'}
-all_demo_data <- head(all_demo_data, -1)
-common_vars <- lapply(all_demo_data, names) |> Reduce(f = intersect)
-common_vars
-demo_combined <-
-    lapply(all_demo_data, `[`, common_vars) |>
-    do.call(what = rbind) |>
-    transform(cycle = substring(SDDSRVYR, 8, 16))
-dcm = ifelse(grepl("August", demo_combined$cycle), "2021-2023", demo_combined$cycle)
-demo_combined$cycle = dcm
-dim(demo_combined)
-```
-
-```{r demoplot, fig.width=12, fig.height=7, fig.cap="Ethnicity by Sex and Cycle", echo=FALSE}
+```{r bmiplot, fig.width=12, fig.height=5, fig.cap="Average BMI for 40-59 year olds by Cycle for four population subgroups. TODO: more detailed caption explaining methodology and giving interpretation.", echo=FALSE}
 library("lattice")
-demo_combined |>
-    xtabs(~ cycle + RIAGENDR + RIDRETH1, data = _) |>
-    array2DF() |>
-    dotplot(Value ~ cycle | RIAGENDR,
-            groups = RIDRETH1,
-            layout = c(1, 2), type = "b",
-            par.settings = simpleTheme(pch = 16),
-            auto.key = list(columns = 3))
+library("latticeExtra")
+segplot(factor(cycle) ~ ci_l + ci_u | interaction(RIAGENDR, RIDRETH1),
+        data = CI, # level = estimate,
+        draw.bands = FALSE, lwd = 2, horizontal = FALSE,
+        ylab = "Mean BMI (with 95% confidence interbal)",
+        main = list(label = "Estimated Mean BMI with 95% Confidence Intervals across population subgroups \n (for Age Group 40-59 years)", adj = c(0, 0.5)),
+        scales = list(x = list(rot = 90)),
+        centers = BMXBMI) + layer_(panel.grid(v = -1, h = 0))
+run_time <- proc.time() - start_time
 ```
+
+As a simple but interesting illustration of the type of analysis enabled by this system, Figure \@ref(fig:bmiplot) plots estimates and confidence intervals for the average BMI among 40--59 year olds in four major population subgroups, for 11 NHANES cycles. The confidence intervals, computed separately for each cycle taking into account sampling weights and the two-stage design of the NHANES survey, are nontrivial but not novel in themselves. What is remarkable is that this entire analysis involving 22 separate NHANES tables across 11 cycles took only around `r round(run_time[["elapsed"]])` seconds to run on a typical personal computer.
 
 Although we have illustrated the use of our system using tools based on R, similar tools can of course be developed using any other language that can communicate with a database. 
 
@@ -170,11 +202,15 @@ c) Reproducible Outputs: The system facilitates the creation of reproducible out
 
 # Discussion
 
-The R ecosystem has a long history of fostering reproducibility in scientific computing @RepRes and the production of dynamic documents that can be training material, e.g. package vignettes, but have been extended to support authoring of books @xie2024 and scientific papers where the actual code to create figures and tables is explicitly provided. More recently Dononho @donoho2024 and others have touched on the importance of frictionless reproducibility. The system we are proposing would directly support these activities.  And, even more importantly the approach lends itself to a more general concept of low friction extensibility, where a paper and its results can not only be replicated, but they can be extended and enhanced with relative ease. While science relies on reproducibility it progresses through extension and adoption of new methods and paradigms.
+The R ecosystem has a long history of fostering reproducibility in scientific computing [@RepRes] and the production of dynamic documents that can be training material, e.g. package vignettes, but have been extended to support authoring of books [@xie2024] and scientific papers where the actual code to create figures and tables is explicitly provided. More recently Dononho [@donoho2024] and others have touched on the importance of frictionless reproducibility. The system we are proposing would directly support these activities.  And, even more importantly the approach lends itself to a more general concept of low friction extensibility, where a paper and its results can not only be replicated, but they can be extended and enhanced with relative ease. While science relies on reproducibility it progresses through extension and adoption of new methods and paradigms.
 
-We believe that by creating this resource we will enhance reproducibility and foster the adoption of more sophisticated and appropriate statistical methods. We hope to be able to build a community, similar to Bioconductor to foster development and application of scientific methods. We have found that when users are willing to share their code then others will be easily able to replicated and extend their results. We hope to be able to create a sharable resource of analysis documents, ideally in the form of notebooks, which could be coded in different languages. These would be dynamic in the sense described in @RepRes. For example, the use of the survey weights is sporadic, even though accounting for them is essential for most inferences. Having high quality tutorials that are based on the tasks that users need to perform will likely increase the awareness of the need for these methods as well as their adoption.
+While NHANES is an extremely valuable data resource it is also, at times, technically challenging to work with due to the many inconsistencies that are bound to appear in any survey of the size and complexity of NHANES.  Some of these are minor and likely inadvertent, and others are responses to external events such as the impact that the global COVID pandemic had on the 2019--2020 cycle. We believe that there is value in having a resource that can provide a mechanism for discussing and resolving these issues so that users will not need to re-discover them. This can lead to agreed upon best practices for revising and adapting. By providing a resource that helps foster reproducibility and sharing, we hope to help users identify and avoid errors in their analyses. 
 
-With any survey of the size and complexity of NHANES inconsistencies are bound to appear.  Some are minor and likely inadvertent and others are responses to external events such as the impact that the global COVID pandemic had on the 2019-2020 cycle.  We believe that there is value in having a resource that can provide a mechanism for discussing and resolving these issues so that users will not need to re-discover them. This can lead to agreed upon best practices for revising and adapting.
+As a natural follow up to our current work, we hope to be able to develop a community resource supporting analysis documents, ideally in the form of notebooks, which could be coded in different languages. These would be dynamic in the sense described in @RepRes. Having high quality tutorials that are based on the tasks that users need to perform, such as the need to account for NHANES survey weights without which most inferences are invalid, will likely increase the awareness of the need for these methods as well as their adoption.
+
+More generally, we hope that our work will serve as a template that can be used for other similar studies to enable enhanced reproducibility and the adoption of more sophisticated and appropriate statistical methods. We hope to be able to build a community, similar to Bioconductor, to foster development and application of scientific methods for such large scale studies. We have found that when users are willing to share their code and analyses, others are more easily able to replicate and extend their results. 
+
+
 
 <!-- Lastly we want to call attention to the ideas of frictionless reproducibility and low friction extensibility (e.g. @donoho2024). Enabling others to very easily replicate and extend research results will help everyone make better use of the NHANES data resource.  Good statistical practice can be enabled using the tools we describe. -->
 

@@ -10,12 +10,14 @@ metadata_cb(variable = NULL, table = NULL)
 
 metadata_var(variable = NULL, table = NULL)
 
-metadata_tab(table = NULL)
+metadata_tab(table = NULL, UseConstraints = FALSE)
 }
 \arguments{
-\item{variable}{Character string naming a variable in one or more NHANES tables}
+\item{variable}{Character vector naming one or more variable}
 
-\item{table}{Character string naming one NHANES table}
+\item{table}{Character vector naming one or more NHANES table}
+
+\item{UseConstraints}{If FALSE then only tables with no use constraints are returned.}
 }
 \value{
 A dataframe or tibble with the appropriate subset of the metadata table.
@@ -34,11 +36,14 @@ package.
 metadata_var accesses the QuestionnaireVariables metadata table.
 metadata_cb accesses the VariableCodebook metadata table.
 metadata_tab accesses the QuestionnaireDescriptions table.
+The returned object has entries for each variable/table combination where there is a match,
+in the sense that the table has a variable with the supplied name.
 }
 \examples{
 ex1 = metadata_cb(variable = "LBDLDL")
 ex2 = metadata_var(table = "DEMO_D")
 ex3 = metadata_tab(table = "ACQ_J")
+ex4 = metadata_var(variable=c("RIDAGEYR",  "RIAGENDR", "BPXSY1"), table=c("DEMO", "DEMO_B", "DEMO_C", "BPX_C"))
 }
 \author{
 Deepayan Sarkar

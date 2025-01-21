@@ -11,15 +11,16 @@ qc_var(
   tables = tables,
   var = metadata_var(x),
   cb = metadata_cb(x),
-  tab = metadata_tab()
+  tab = metadata_tab(),
+  UseConstraints = FALSE
 )
 
 \method{summary}{qc_var}(object, ...)
 
-\method{print}{qc_var}(x, ...)
+\method{print}{qc_var}(x, ..., show = c("multiple", "description", "saslabel", "target"))
 }
 \arguments{
-\item{x}{Character vector of length one, naming a variable in one or more NHANES tables}
+\item{x}{An object of class \code{"qv_var"}}
 
 \item{var}{Optional data frame containing variable metadata}
 
@@ -27,9 +28,19 @@ qc_var(
 
 \item{tab}{Optional data frame containing table metadata}
 
+\item{UseConstraints}{If FALSE, the default, then only publicly available tables are searched.}
+
 \item{object}{An object of class \code{"qv_var"}}
 
 \item{...}{Additional arguments, ignored}
+
+\item{show}{A vector giving the types of identified anomalies to
+print. Currently four types of anomalies are identified:
+presence of the variable in multiple tables in the same cycle;
+mismatches in the Description field, mismatches in SAS Label,
+and mismatch in the Target specification. Some of these
+mimatches are benign, so it is useful to suppress them when
+printing.}
 }
 \value{
 An object of S3 class \code{"qc_var"} with suitable print and summary methods.
@@ -44,6 +55,9 @@ The arguments var, cb and tab, will be default use the corresponding metadata ta
 t1 = qc_var("DMDEDUC3")
 ## restrict the tables
 t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
+print(t2, show = "saslabel")
+qc_var("LBCBHC")
+qc_var("LBXHCT")
 }
 \author{
 Deepayan Sarkar
