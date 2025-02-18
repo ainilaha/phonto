@@ -13,6 +13,12 @@ In this tutorial, we will delve into the steps for incorporating survey weights 
 NHANES employs a complex, multistage probability sampling design to collect data that is representative of the United States population. 
 Incorporating survey weights is crucial for making unbiased estimates that are generalizable to the larger population.
 
+<!-- 
+
+##FIXME: need to discuss the use of options(survey.lonely.psu = "adjust")
+
+-->
+
 ## Overview
 In this tutorial, we will leverage the `phonto` package to access the NHANES data and use the `survey` package to perform key statistical analyses. Our primary focus will be on analyzing levels of Glycohemoglobin (HBA1C) across two cycles: 2015-2016 and 2017-2018. 
 
