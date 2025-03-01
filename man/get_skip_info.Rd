@@ -2,7 +2,7 @@
 % Please edit documentation in R/qc-skip.R
 \name{get_skip_info}
 \alias{get_skip_info}
-\title{Find variables that may have been skipped based on response to a
+\title{Identify questions that may have been skipped based on response to a
 previous question.}
 \usage{
 get_skip_info(table)
@@ -11,10 +11,16 @@ get_skip_info(table)
 \item{table}{Name of a NHANES table}
 }
 \value{
-data frame
+A data frame with columns:
+\describe{
+\item{Table}{The name of the input table.}
+\item{Variable}{One row for each question in the documentation file.}
+\item{MaybeSkipped}{A logical value indicating whether that question might have been skipped.}
+.  \item{SkippedDueTo}{A vector of the questions, delivered earlier, that might have caused this question to be skipped.}
+}
 }
 \description{
-Find variables that may have been skipped based on response to a
+Identify questions that may have been skipped based on response to a
 previous question.
 }
 \examples{

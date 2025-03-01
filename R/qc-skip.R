@@ -1,14 +1,19 @@
 
-## Identify questions in a table that might lead to skipping, and
-## which variables are potentially skipped as a result. This will need
-## to assume that the order is known, which we will take from the
-## codebook (make sure that's the order in the database as well).
+## This function identifies questions in a table that might have been skipped, and
+## reports which questions might have caused that skipping.
+## This assumes that the order questions are asked is the order they are reported in the codebook.
 
-##' Find variables that may have been skipped based on response to a
+##' Identify questions that may have been skipped based on response to a
 ##' previous question.
 ##'
 ##' @param table Name of a NHANES table
-##' @return data frame
+##' @return A data frame with columns:
+##' \describe{
+#'   \item{Table}{The name of the input table.}
+#'   \item{Variable}{One row for each question in the documentation file.}
+#'   \item{MaybeSkipped}{A logical value indicating whether that question might have been skipped.}
+#'.  \item{SkippedDueTo}{A vector of the questions, delivered earlier, that might have caused this question to be skipped.}
+#' }
 ##' @author Deepayan Sarkar
 ##' @examples
 ##' sk1 = get_skip_info("DEMO_J")
@@ -19,10 +24,10 @@ get_skip_info <- function(table)
 {
     ## Look at codebook for a table and decide which variables may get
     ## skipped over
-
+    if(length(table)>1) stop("argument table has length greater than one")
     var <- metadata_var(table = table)
     cb <- metadata_cb(table = table)[, c("Variable", "SkipToItem")]
-
+    cb <- unique(cb)
     ##SkipToItem is character - and not NA
     skipvars <- subset(cb, nchar(SkipToItem)>0)
 
