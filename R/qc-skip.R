@@ -6,7 +6,7 @@
 ##' Identify questions that may have been skipped based on response to a
 ##' previous question.
 ##'
-##' @param table Name of a NHANES table
+##' @param table Character string giving the name of an NHANES table
 ##' @return A data frame with columns:
 ##' \describe{
 #'   \item{Table}{The name of the input table.}
@@ -24,12 +24,12 @@ get_skip_info <- function(table)
 {
     ## Look at codebook for a table and decide which variables may get
     ## skipped over
-    if(length(table)>1) stop("argument table has length greater than one")
+    if(length(table)>1) stop("argument 'table' must have length one")
     var <- metadata_var(table = table)
     cb <- metadata_cb(table = table)[, c("Variable", "SkipToItem")]
     cb <- unique(cb)
     ##SkipToItem is character - and not NA
-    skipvars <- subset(cb, nchar(SkipToItem)>0)
+    skipvars <- subset(cb, nchar(SkipToItem) > 0)
 
     ## Sanity check: non-NA values of SkipToItem should be either
     ## another variable, or "End of Section"
@@ -46,7 +46,8 @@ get_skip_info <- function(table)
     ## information later if necessary.
 
     maybe_skipped <- structure(numeric(length(uvars)), names = uvars)
-    due_to <- structure(character(length(uvars)), names = uvars)
+    due_to <- structure(vector(mode = "list", length = length(uvars)),
+                        names = uvars)
 
     ## Example: table = "WHQ_B"
     ##    Variable     SkipToItem
@@ -72,12 +73,13 @@ get_skip_info <- function(table)
         ind <- seq(iskipvars$Variable[i] + 1L,
                    iskipvars$SkipToItem[i] - 1L)
         maybe_skipped[ind] <- maybe_skipped[ind] + 1
-        due_to[ind] <- ifelse(nzchar(due_to[ind]),
-                              paste(due_to[ind], skipvars$Variable[[i]], sep = ","),
-                              skipvars$Variable[[i]])
+        for (j in ind) {
+            due_to[[j]] <- c(due_to[[j]], skipvars$Variable[[i]])
+        }
     }
     data.frame(Table = table, Variable = uvars,
-               MaybeSkipped = maybe_skipped > 0, SkippedDueTo = due_to,
+               MaybeSkipped = maybe_skipped > 0,
+               SkippedDueTo = sapply(due_to, function(x) paste(unique(x), collapse = ", ")),
                row.names = NULL)
 }
 
