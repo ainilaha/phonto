@@ -118,6 +118,26 @@ qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
     else NULL
 }
 
+## compare the levels (Value Description) of the variable.  Can be
+## useful for numeric as well, if some interpretations have
+## changed (e.g. age coarsening --- see RIDAGEYR). Can also have some cycles
+## (apparently) numeric and some categorical. TODO
+
+qc_var_levels <- function(x, var, cb, tab, ignore.case = FALSE)
+{
+    varlevels <- subset(cb, Variable == x)
+    ans <- xtabs( ~ ValueDescription + TableName, varlevels)
+    ## if categorical, all entries should be 1
+    if (all(ans == 1)) return(NULL)
+    ## can still be OK, if numeric --- indicated by the presence of "Range of Values"
+    ## TODO
+    ## otherwise, return the levels that appear in some but not all tables
+    ok <- rowSums(ans) == ncol(ans)
+    if (all(ok)) stop("Unexpected counts")
+    return(list(levels_mismatch = ans[!ok, , drop = FALSE]))
+}
+
+
 
 
 ## - Inconsistency in type (numeric / categorical)
@@ -181,7 +201,8 @@ qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x
     res <- c(qc_var_multtable(x, var, cb, tab),
              qc_var_description(x, var, cb, tab),
              qc_var_saslabel(x, var, cb, tab),
-             qc_var_target(x, var, cb, tab))
+             qc_var_target(x, var, cb, tab),
+             qc_var_levels(x, var, cb, tab))
     if (is.null(res)) res <- list()
     structure(res,
               variable = x,
@@ -214,7 +235,8 @@ summary.qc_var <- function(object, ...)
 #'     printing.
 #' @export
 print.qc_var <- function(x, ...,
-                         show = c("multiple", "description", "saslabel", "target"))
+                         show = c("multiple", "description",
+                                  "saslabel", "target", "levels"))
 {
     ok <- TRUE
     cat("Variable: ", attr(x, "variable"))
@@ -244,6 +266,14 @@ print.qc_var <- function(x, ...,
         ok <- FALSE
         cat("\nMismatch in Target:\n")
         print(array2DF(x$target_mismatch, responseName = "Frequency"))
+    }
+    if (!is.null(x$levels_mismatch) && "levels" %in% show)
+    {
+        ok <- FALSE
+        cat("\nMismatch in Levels:\n")
+        present <- rowSums(x$levels_mismatch)
+        print(cbind(present = present,
+                    absent = ncol(x$levels_mismatch) - present))
     }
     if (ok) cat(" --- no problems found")
     invisible(x)
