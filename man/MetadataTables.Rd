@@ -17,10 +17,12 @@ metadata_tab(table = NULL, UseConstraints = FALSE)
 
 \item{table}{Character vector naming one or more NHANES table}
 
-\item{UseConstraints}{If FALSE then only tables with no use constraints are returned.}
+\item{UseConstraints}{If FALSE then only tables with no use
+constraints are returned.}
 }
 \value{
-A dataframe or tibble with the appropriate subset of the metadata table.
+A dataframe or tibble with the appropriate subset of the
+metadata table.
 }
 \description{
 Access Metadata Tables in NHANES Postgres DB
@@ -33,11 +35,12 @@ Where appropriate the returned value can be a subset for a single variable, or
 NHANES table. The contents of these tables is described in the MetaData vignette for the
 package.
 
-metadata_var accesses the QuestionnaireVariables metadata table.
-metadata_cb accesses the VariableCodebook metadata table.
-metadata_tab accesses the QuestionnaireDescriptions table.
-The returned object has entries for each variable/table combination where there is a match,
-in the sense that the table has a variable with the supplied name.
+metadata_var accesses the QuestionnaireVariables metadata
+table.  metadata_cb accesses the VariableCodebook metadata
+table.  metadata_tab accesses the QuestionnaireDescriptions
+table.  The returned object has entries for each
+variable/table combination where there is a match, in the
+sense that the table has a variable with the supplied name.
 }
 \examples{
 ex1 = metadata_cb(variable = "LBDLDL")

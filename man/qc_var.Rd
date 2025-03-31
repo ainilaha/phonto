@@ -15,49 +15,65 @@ qc_var(
   UseConstraints = FALSE
 )
 
-\method{summary}{qc_var}(object, ...)
+\method{summary}{qc_var}(
+  object,
+  ...,
+  show = c("multiple", "description", "saslabel", "target", "levels")
+)
 
-\method{print}{qc_var}(x, ..., show = c("multiple", "description", "saslabel", "target"))
+\method{print}{qc_var}(
+  x,
+  ...,
+  show = c("multiple", "description", "saslabel", "target", "levels")
+)
 }
 \arguments{
-\item{x}{An object of class \code{"qv_var"}}
+\item{x}{An object of class \code{"qc_var"}}
 
-\item{var}{Optional data frame containing variable metadata}
+\item{tables}{Optional character vector of table names. If
+specified, the search for the variable \code{x} is restricted
+to these tables.}
 
-\item{cb}{Optional data frame containing codebook metadata}
+\item{var}{Optional data frame containing variable metadata.}
 
-\item{tab}{Optional data frame containing table metadata}
+\item{cb}{Optional data frame containing codebook metadata.}
 
-\item{UseConstraints}{If FALSE, the default, then only publicly available tables are searched.}
+\item{tab}{Optional data frame containing table metadata.}
 
-\item{object}{An object of class \code{"qv_var"}}
+\item{UseConstraints}{If FALSE, the default, then only publicly
+available tables are searched.}
+
+\item{object}{An object of class \code{"qc_var"}}
 
 \item{...}{Additional arguments, ignored}
 
-\item{show}{A vector giving the types of identified anomalies to
-print. Currently four types of anomalies are identified:
+\item{show}{A vector giving the types of detected anomalies to
+display. Currently five types of anomalies are identified:
 presence of the variable in multiple tables in the same cycle;
 mismatches in the Description field, mismatches in SAS Label,
-and mismatch in the Target specification. Some of these
-mimatches are benign, so it is useful to suppress them when
-printing.}
+mismatches in the Target specification, and inconsistencies in
+levels. Some of these mimatches are benign, so it is useful to
+suppress them when displaying the results.}
 }
 \value{
-An object of S3 class \code{"qc_var"} with suitable print and summary methods.
+An object of S3 class \code{"qc_var"} with suitable print
+and summary methods.
 }
 \description{
 QC report for a single variable in NHANES
 }
 \details{
-The arguments var, cb and tab, will be default use the corresponding metadata tables (Variables, CodeBook and Questionnaires).
+The arguments var, cb and tab, will be default use the
+corresponding metadata tables (Variables, CodeBook and
+Questionnaires).
 }
 \examples{
-t1 = qc_var("DMDEDUC3")
-## restrict the tables
-t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
-print(t2, show = "saslabel")
 qc_var("LBCBHC")
 qc_var("LBXHCT")
+qc_var("RIDAGEYR") |> summary()
+qc_var("DMDEDUC3") |> summary()
+t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
+print(t2, show = "saslabel")
 }
 \author{
 Deepayan Sarkar

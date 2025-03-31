@@ -8,7 +8,7 @@ previous question.}
 get_skip_info(table)
 }
 \arguments{
-\item{table}{Name of a NHANES table}
+\item{table}{Character string giving the name of an NHANES table}
 }
 \value{
 A data frame with columns:

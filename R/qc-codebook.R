@@ -36,13 +36,16 @@
 ##' @title Metadata Tables : Access Postgres DB
 ##' @param variable Character vector naming one or more variable
 ##' @param table Character vector naming one or more NHANES table
-##' @param UseConstraints If FALSE then only tables with no use constraints are returned.
-##' @return A dataframe or tibble with the appropriate subset of the metadata table.
-##' @details metadata_var accesses the QuestionnaireVariables metadata table.
-##' metadata_cb accesses the VariableCodebook metadata table.
-##' metadata_tab accesses the QuestionnaireDescriptions table.
-##' The returned object has entries for each variable/table combination where there is a match,
-##' in the sense that the table has a variable with the supplied name.
+##' @param UseConstraints If FALSE then only tables with no use
+##'     constraints are returned.
+##' @return A dataframe or tibble with the appropriate subset of the
+##'     metadata table.
+##' @details metadata_var accesses the QuestionnaireVariables metadata
+##'     table.  metadata_cb accesses the VariableCodebook metadata
+##'     table.  metadata_tab accesses the QuestionnaireDescriptions
+##'     table.  The returned object has entries for each
+##'     variable/table combination where there is a match, in the
+##'     sense that the table has a variable with the supplied name.
 ##' @examples
 ##' ex1 = metadata_cb(variable = "LBDLDL")
 ##' ex2 = metadata_var(table = "DEMO_D")
@@ -89,32 +92,38 @@ qc_var_multtable <- function(x, var, cb, tab)
 
 ## - Inconsistency in Description / SasLabel (mostly benign)
 ## - qc_var doesn't have an option to pass along ignore.case
+
 qc_var_description <- function(x, var, cb, tab, ignore.case = FALSE)
 {
-    description <- subset(var, Variable == x)[["Description"]]
+    description <-
+        with(subset(var, Variable == x),
+             structure(Description, names = TableName))
     if (ignore.case) description <- tolower(description)
-    tt <- table(description)
-    if (length(tt) > 1) list(description_mismatch = table(description))
+    if (length(table(description)) > 1)
+        list(description_mismatch = description)
     else NULL
 }
 
-
 qc_var_saslabel <- function(x, var, cb, tab, ignore.case = FALSE)
 {
-    saslabel <- subset(var, Variable == x)[["SasLabel"]]
+    saslabel <-
+        with(subset(var, Variable == x),
+             structure(SasLabel, names = TableName))
     if (ignore.case) saslabel <- tolower(saslabel)
-    tt <- table(saslabel)
-    if (length(tt) > 1) list(saslabel_mismatch = table(saslabel))
+    if (length(table(saslabel)) > 1)
+        list(saslabel_mismatch = saslabel)
     else NULL
 }
 
 ## compare the targeting of the question
 qc_var_target <- function(x, var, cb, tab, ignore.case = FALSE)
 {
-    target <- subset(var, Variable == x)[["Target"]]
+    target <-
+        with(subset(var, Variable == x),
+             structure(Target, names = TableName))
     if (ignore.case) target <- tolower(target)
-    tt <- table(target)
-    if (length(tt) > 1) list(target_mismatch = table(target))
+    if (length(table(target)) > 1)
+        list(target_mismatch = target)
     else NULL
 }
 
@@ -166,39 +175,55 @@ qc_var_levels <- function(x, var, cb, tab, ignore.case = FALSE)
 ##' QC report for a single variable in NHANES
 ##'
 ##' @title qc_var: QC on NHANES variable
-##' @param x Character vector of length one, naming a variable in one or more NHANES tables
-##' @param var Optional data frame containing variable metadata
-##' @param cb Optional data frame containing codebook metadata
-##' @param tab Optional data frame containing table metadata
-##' @param UseConstraints If FALSE, the default, then only publicly available tables are searched.
-##' @return An object of S3 class \code{"qc_var"} with suitable print and summary methods.
+##' @param x Character vector of length one, naming a variable in one
+##'     or more NHANES tables.
+##' @param tables Optional character vector of table names. If
+##'     specified, the search for the variable \code{x} is restricted
+##'     to these tables.
+##' @param var Optional data frame containing variable metadata.
+##' @param cb Optional data frame containing codebook metadata.
+##' @param tab Optional data frame containing table metadata.
+##' @param UseConstraints If FALSE, the default, then only publicly
+##'     available tables are searched.
+##' @return An object of S3 class \code{"qc_var"} with suitable print
+##'     and summary methods.
 ##' @export
-##' @details
-##' The arguments var, cb and tab, will be default use the corresponding metadata tables (Variables, CodeBook and Questionnaires).
+##' @details The arguments var, cb and tab, will be default use the
+##'     corresponding metadata tables (Variables, CodeBook and
+##'     Questionnaires).
 ##'
 ##' @examples
-##' t1 = qc_var("DMDEDUC3")
-##' ## restrict the tables
-##' t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
-##' print(t2, show = "saslabel")
 ##' qc_var("LBCBHC")
 ##' qc_var("LBXHCT")
-##' @author Deepayan Sarkar
-qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x), tab = metadata_tab(), UseConstraints = FALSE)
+##' qc_var("RIDAGEYR") |> summary()
+##' qc_var("DMDEDUC3") |> summary()
+##' t2 = qc_var("DMDEDUC3", tables=c("DEMO_B", "DEMO_J"))
+##' print(t2, show = "saslabel")
+###' @author Deepayan Sarkar
+qc_var <- function(x, tables = tables,
+                   var = metadata_var(x),
+                   cb = metadata_cb(x),
+                   tab = metadata_tab(),
+                   UseConstraints = FALSE)
 {
-    if( !UseConstraints)
-      tab = metadata_tab(UseConstraints=UseConstraints)
-    availableTables = tab$TableName
-    if(!missing(tables)) {
-        missingTabs = setdiff(tables, availableTables)
-        availableTables = intersect(tables, availableTables)
-        if(length(missingTabs > 0 )) warning(paste("Specified tables:", missingTabs,
-                                                   "are not public or don't exist"))
-        cb = metadata_cb(x, availableTables)
-        var = metadata_var(x, availableTables)
+    if (!isTRUE(UseConstraints)) {
+        tab <- dplyr::filter(tab, UseConstraints == "None")
+        var <- dplyr::filter(var, TableName %in% tab$TableName)
+        cb  <- dplyr::filter(cb,  TableName %in% tab$TableName)
     }
-
-    res <- c(qc_var_multtable(x, var, cb, tab),
+    if (!missing(tables)) {
+        missingTabs <- setdiff(tables, tab$TableName)
+        if (length(missingTabs) > 0)
+            warning(paste("Specified tables:", missingTabs,
+                          "are not public or don't exist"))
+    }
+    else
+        tables <- dplyr::filter(var, Variable == x)$TableName
+    tab <- dplyr::filter(tab, TableName %in% tables)
+    var <- dplyr::filter(var, TableName %in% tables)
+    cb  <- dplyr::filter(cb,  TableName %in% tables)
+    res <- c(list(matching_tables = tables),
+             qc_var_multtable(x, var, cb, tab),
              qc_var_description(x, var, cb, tab),
              qc_var_saslabel(x, var, cb, tab),
              qc_var_target(x, var, cb, tab),
@@ -211,73 +236,121 @@ qc_var <- function(x, tables = tables, var = metadata_var(x), cb = metadata_cb(x
 
 #' @rdname qc_var
 #' @export
-#' @param object An object of class \code{"qv_var"}
+#' @param object An object of class \code{"qc_var"}
+#' @param show A vector giving the types of detected anomalies to
+#'     display. Currently five types of anomalies are identified:
+#'     presence of the variable in multiple tables in the same cycle;
+#'     mismatches in the Description field, mismatches in SAS Label,
+#'     mismatches in the Target specification, and inconsistencies in
+#'     levels. Some of these mimatches are benign, so it is useful to
+#'     suppress them when displaying the results.
 #' @param ... Additional arguments, ignored
-summary.qc_var <- function(object, ...)
+summary.qc_var <- function(object, ...,
+                           show = c("multiple", "description",
+                                    "saslabel", "target", "levels"))
 {
-    data.frame(Variable = attr(object, "variable"),
-               multtable = !is.null(object$multiple_tables),
-               description = !is.null(object$description_mismatch),
-               saslabel = !is.null(object$saslabel_mismatch),
-               target = !is.null(object$target_mismatch))
+    ok <- TRUE
+    cat("Variable: ", attr(object, "variable"))
+    cat("\nFound in: ", object$matching_tables, fill = TRUE)
+
+    if (!is.null(object$multiple_tables) && "multiple" %in% show)
+    {
+        ok <- FALSE
+        cat("\nAppears in multiple tables within same cycle:\n")
+        ## wcycle <- which(duplicated(object$multiple_tables$cycle))
+        ## wsub <- subset(object$multiple_tables, cycle %in% cycle[wcycle])
+        tapply(object$multiple_tables, ~ cycle,
+               function(d) paste(d$TableName, collapse = " / ")) |>
+            array2DF(responseName = "Tables") |> print()
+    }
+    if (!is.null(object$description_mismatch) && "description" %in% show)
+    {
+        ok <- FALSE
+        cat("\nMismatch in Description:\n")
+        print(array2DF(table(Description = object$description_mismatch),
+                       responseName = "Frequency"))
+    }
+    if (!is.null(object$saslabel_mismatch) && "saslabel" %in% show)
+    {
+        ok <- FALSE
+        cat("\nMismatch in Saslabel:\n")
+        print(array2DF(table(SasLabel = object$saslabel_mismatch),
+                       responseName = "Frequency"))
+    }
+    if (!is.null(object$target_mismatch) && "target" %in% show)
+    {
+        ok <- FALSE
+        cat("\nMismatch in Target:\n")
+        print(array2DF(table(Target = object$target_mismatch),
+                       responseName = "Frequency"))
+    }
+    if (!is.null(object$levels_mismatch) && "levels" %in% show)
+    {
+        ok <- FALSE
+        cat("\nMismatch in Levels:\n")
+        present <- rowSums(object$levels_mismatch)
+        print(cbind(present = present,
+                    absent = ncol(object$levels_mismatch) - present))
+    }
+    if (ok) cat("No inconsistencies detected")
+    invisible()
 }
 
 
 
 #' @rdname qc_var
-#' @param x An object of class \code{"qv_var"}
-#' @param show A vector giving the types of identified anomalies to
-#'     print. Currently four types of anomalies are identified:
-#'     presence of the variable in multiple tables in the same cycle;
-#'     mismatches in the Description field, mismatches in SAS Label,
-#'     and mismatch in the Target specification. Some of these
-#'     mimatches are benign, so it is useful to suppress them when
-#'     printing.
+#' @param x An object of class \code{"qc_var"}
 #' @export
 print.qc_var <- function(x, ...,
                          show = c("multiple", "description",
                                   "saslabel", "target", "levels"))
 {
     ok <- TRUE
-    cat("Variable: ", attr(x, "variable"))
-    if (!is.null(x$multiple_tables) && "multiple" %in% show)
+    object <- x
+    cat("Variable: ", attr(object, "variable"))
+    cat("\nFound in: ", object$matching_tables, fill = TRUE)
+
+    vec2df <- function(varname)
+    {
+        data.frame(Table = names(object[[varname]]),
+                   Value = unname(object[[varname]]))
+    }
+    if (!is.null(object$multiple_tables) && "multiple" %in% show)
     {
         ok <- FALSE
         cat("\nAppears in multiple tables within same cycle:\n")
-        ## wcycle <- which(duplicated(x$multiple_tables$cycle))
-        ## wsub <- subset(x$multiple_tables, cycle %in% cycle[wcycle])
-        tapply(x$multiple_tables, ~ cycle, function(d) paste(d$TableName, collapse = " / ")) |>
+        ## wcycle <- which(duplicated(object$multiple_tables$cycle))
+        ## wsub <- subset(object$multiple_tables, cycle %in% cycle[wcycle])
+        tapply(object$multiple_tables, ~ cycle,
+               function(d) paste(d$TableName, collapse = " / ")) |>
             array2DF(responseName = "Tables") |> print()
     }
-    if (!is.null(x$description_mismatch) && "description" %in% show)
+    if (!is.null(object$description_mismatch) && "description" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Description:\n")
-        print(array2DF(x$description_mismatch, responseName = "Frequency"))
+        vec2df("description_mismatch") |> print()
     }
-    if (!is.null(x$saslabel_mismatch) && "saslabel" %in% show)
+    if (!is.null(object$saslabel_mismatch) && "saslabel" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Saslabel:\n")
-        print(array2DF(x$saslabel_mismatch, responseName = "Frequency"))
+        vec2df("saslabel_mismatch") |> print()
     }
-    if (!is.null(x$target_mismatch) && "target" %in% show)
+    if (!is.null(object$target_mismatch) && "target" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Target:\n")
-        print(array2DF(x$target_mismatch, responseName = "Frequency"))
+        vec2df("target_mismatch") |> print()
     }
-    if (!is.null(x$levels_mismatch) && "levels" %in% show)
+    if (!is.null(object$levels_mismatch) && "levels" %in% show)
     {
         ok <- FALSE
         cat("\nMismatch in Levels:\n")
-        present <- rowSums(x$levels_mismatch)
-        print(cbind(present = present,
-                    absent = ncol(x$levels_mismatch) - present))
+        print(object$levels_mismatch)
     }
-    if (ok) cat(" --- no problems found")
-    invisible(x)
+    if (ok) cat("No inconsistencies detected")
+    invisible()
 }
-
 
 

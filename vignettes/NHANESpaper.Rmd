@@ -146,7 +146,8 @@ FIXME: put in a description of what we do for QC of levels.
 
 -->
 
-The output of `qc_var("DMDEDUC3"), show = "saslabel"))` is shown below and indicates that the SAS Label has changed over cycles, albeit in an unimportant way (`Education level` versus `Education Level`). 
+The output of `qc_var("DMDEDUC3"), show = "saslabel"))` is shown below and indicates that the SAS Label has changed over cycles, albeit in an unimportant way (`Education level` versus `Education Level`).
+
 ```{r qcvar, echo=TRUE}
 print(qc_var("DMDEDUC3"), show = "saslabel")
 ```
