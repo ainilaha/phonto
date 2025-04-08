@@ -27,6 +27,7 @@ get_skip_info <- function(table)
     if(length(table)>1) stop("argument 'table' must have length one")
     var <- metadata_var(table = table)
     cb <- metadata_cb(table = table)[, c("Variable", "SkipToItem")]
+    cb <- dplyr::mutate(cb, SkipToItem = toupper(SkipToItem))
     cb <- unique(cb)
     ##SkipToItem is character - and not NA
     skipvars <- subset(cb, nchar(SkipToItem) > 0)
@@ -34,8 +35,8 @@ get_skip_info <- function(table)
     ## Sanity check: non-NA values of SkipToItem should be either
     ## another variable, or "End of Section"
 
-    uvars <- unique(cb$Variable)
-    stopifnot(all(skipvars$SkipToItem %in% c(uvars, "End of Section")))
+    uvars <- unique(var$Variable) # not always same as cb$Variable; see BPQ_D
+    stopifnot(all(skipvars$SkipToItem %in% c(uvars, "END OF SECTION")))
 
     ## For each variable, we want to know (a) if this variable _might_
     ## have been skipped based on response to a previous question, and
