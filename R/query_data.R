@@ -62,7 +62,7 @@ unioned_queries <- list()
 # Process each unique set of columns
 for (cols in unique(tables_n_cols)) {
   # Get tables that have the same set of columns
-  tables_with_cols <- names(tables_n_cols)[sapply(tables_n_cols, function(x) all(x == cols))]
+  tables_with_cols <- names(tables_n_cols)[sapply(tables_n_cols, function(x) setequal(x, cols))]
 
   # Create a unioned query for the tables with the same set of columns
   unioned_query <- purrr::map(tables_with_cols, function(tb_name) {
